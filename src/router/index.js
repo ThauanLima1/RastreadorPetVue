@@ -1,16 +1,17 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import LoginUser from '../views/LoginUser.vue'
-import RegisterUser from '@/views/RegisterUser.vue'
+import { createRouter, createWebHistory } from "vue-router";
+import Login from "../views/login.vue";
+import Cadastro from "../views/cadastro.vue";
+import Mapa from "../views/mapa.vue";
 
 const routes = [
-  { path: '/login', component: LoginUser },
-  { path: '/register', component: RegisterUser}
-]
+  { path: "/cademeupet/app/login", component: Login },
+  { path: "/cademeupet/app/cadastro", component: Cadastro },
+  { path: "/cademeupet/app/mapa", component: Mapa },
+];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
-})
+  routes,
+});
 
-export default router
-  
+export default router;
