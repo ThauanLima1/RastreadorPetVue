@@ -10,9 +10,6 @@
     src/firebase/config.js
     node_modules
 
-    node_modulesgit add .gitignore
-git commit -m "Remove node_modules do versionamento"
-
     .DS_Store
     dist
     dist-ssr
