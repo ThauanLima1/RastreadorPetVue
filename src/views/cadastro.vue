@@ -1,16 +1,15 @@
 <template>
   <div class="container">
-        <div class="section-esquerda">
+    <div class="section-esquerda">
       <img src="@/assets/imgs/cachorro-cadastro.jpg" alt="Cachorro" />
     </div>
     <div class="section-direita">
-
-            <div class="form-login">
+      <div class="form-login">
         <div class="logo">
           <img src="../assets/imgs/logo.svg" />
         </div>
         <h2>Bem vindo!</h2>
-        <p>Logue com sua conta para continuar.</p>
+        <p>Crie uma conta para continuar.</p>
 
         <button class="btn-google" @click="loginComGoogle">
           <img src="../assets/imgs/google.svg" />
@@ -38,7 +37,7 @@
             />
 
             <label>Senha</label>
-            <div class="wrapper-olho"  style="margin-bottom: 2.2rem;">
+            <div class="wrapper-olho" style="margin-bottom: 2.2rem">
               <input
                 v-model="senha"
                 class="input sem-margem"
@@ -66,38 +65,36 @@
                 </svg>
               </div>
             </div>
-             <label>Confirmar senha</label>
-              <input
-                v-model="confirmarSenha"
-                class="input sem-margem"
-                style="margin-bottom: 1.5rem;"
-                :type="mostrarSenha ? 'text' : 'password'"
-                placeholder="123456"
-              />
+            <label>Confirmar senha</label>
+            <input
+              v-model="confirmarSenha"
+              class="input sem-margem"
+              style="margin-bottom: 1.5rem"
+              :type="mostrarSenha ? 'text' : 'password'"
+              placeholder="123456"
+            />
           </div>
           <Botao type="submit">Cadastrar</Botao>
         </form>
 
         <div class="login-link">
           Não tem uma conta ainda?
-          <router-link to="/cademeupet/app/login">Entrar</router-link>
+          <router-link to="/app/login">Entrar</router-link>
         </div>
       </div>
     </div>
-
-
   </div>
 </template>
 
 <script setup>
-import Botao from '@/components/botao.vue';
+import Botao from "@/components/botao.vue";
 
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
-import { auth, googleProvider } from "@/firebase/config.js";
-import { signInWithPopup } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth, googleProvider } from "@/firebase/index.js";
+import { signInWithPopup } from "firebase/auth";
 
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 const router = useRouter();
 
@@ -108,47 +105,43 @@ const confirmarSenha = ref("");
 const mostrarSenha = ref(false);
 
 async function cadastrarUsuario() {
-
   if (senha.value !== confirmarSenha.value) {
     alert("As senhas não coincidem!");
     return;
   }
 
   try {
-    const res = await createUserWithEmailAndPassword(auth, email.value, senha.value);
+    const res = await createUserWithEmailAndPassword(
+      auth,
+      email.value,
+      senha.value
+    );
     const usuarioFirebase = res.user;
 
     await updateProfile(usuarioFirebase, {
-      displayName: usuario.value
+      displayName: usuario.value,
     });
 
-    router.push("/cademeupet/app/mapa");
-    
+    router.push("/app/mapa");
   } catch (error) {
     console.error("Erro ao cadastrar usuário:", error);
   }
 }
 
 async function loginComGoogle() {
-
-  try{
+  try {
     await signInWithPopup(auth, googleProvider);
 
-    rota.push("/cademeupet/app/mapa");
-  }catch(error){
+    router.push("/app/mapa");
+  } catch (error) {
     console.error("Erro ao fazer login:", error);
   }
 }
-
 </script>
 
-
-
-
 <style scoped>
-
 .container {
-  display: flex; 
+  display: flex;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
@@ -175,8 +168,8 @@ async function loginComGoogle() {
 
 .form-login {
   padding: 2rem;
-  width: 100%;      
-  max-width: 28rem; 
+  width: 100%;
+  max-width: 28rem;
 }
 
 .logo {
@@ -230,7 +223,6 @@ async function loginComGoogle() {
   display: flex;
   flex-direction: column;
 }
-
 
 .form-grupo label {
   font-size: 1.1rem;
@@ -290,27 +282,27 @@ async function loginComGoogle() {
 }
 
 .olho.ativo {
-  fill:var(--roxo);
+  fill: var(--roxo);
 }
 
 .esqueceu-senha {
-    text-align: right;
+  text-align: right;
 }
 
 .esqueceu-senha a {
-    color: #4285f4;
-    text-decoration: none;
-    font-size: 1rem;
+  color: #4285f4;
+  text-decoration: none;
+  font-size: 1rem;
 }
 
 .login-link {
-    text-align: center;
-    font-size: 1rem;
+  text-align: center;
+  font-size: 1rem;
 }
 
 .login-link a {
-    color: #4285f4;
-    text-decoration: none;
+  color: #4285f4;
+  text-decoration: none;
 }
 
 @media (max-width: 768px) {

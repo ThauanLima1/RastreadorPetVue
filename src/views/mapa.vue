@@ -1,25 +1,23 @@
 <template>
   <nav class="nav-bar">
     <div class="conteudo">
-      <div class="div-logo">
+      <div class="div-logo" @click="abrirMenu">
         <img src="../assets/imgs/logo.svg" class="logo" />
       </div>
 
       <div class="nav-links">
-        <a class="nav-texto">Mapa</a>
+        <a class="nav-texto" @click="centralizarMapa">Mapa</a>
         <a class="nav-texto" @click="abrirBarra('pets')">Pets</a>
         <a class="nav-texto" @click="abrirBarra('geofences')">Geofences</a>
-        <a class="nav-texto" @click="abrirBarra('historico')">Histórico</a>
+        <a class="nav-texto" @click="abrirBarra('alertas')">Alertas</a>
       </div>
 
-      <div class="div-config">
-        <span @click="abrirBarra('config')"
-          ><img src="../assets/imgs/config.svg"
-        /></span>
-        <span @click="sairConta"><img src="../assets/imgs/sair.svg" /></span>
+      <div class="div-config" @click="abrirBarra('configuracoes')">
+        <span><img src="../assets/imgs/config.svg" /></span>
       </div>
     </div>
   </nav>
+
   <div id="mapa" class="mapa"></div>
 
   <barraLateral
@@ -27,156 +25,135 @@
     :nome="nomeBarra"
     @voltar="gerenciarVoltar"
   >
-    <div v-if="conteudoBarra === 'pets'">
-      <h3>Lista de Pets</h3>
-      <p>Carregando pets...</p>
-    </div>
-
-    <div v-show="conteudoBarra === 'geofences'">
-      <p>Clique no mapa para definir o centro da zona segura.</p>
-      <div class="entrada-grupo">
-        <div class="entrada-nome">
-          <label>Nome</label>
-          <input
-            type="text"
-            placeholder="Casa, Parque, Trabalho"
-            v-model="nomeZona"
-            class="form-control label"
-          />
-        </div>
-        <div class="seletorCor">
-          <label>Cor da área</label>
-          <div class="conteudo-cores">
-            <div
-              v-for="cor in opcoesCores"
-              :key="cor.valor"
-              class="cores"
-              :style="{ backgroundColor: cor.hexa }"
-              :class="{ selecionada: corZona === cor.valor }"
-              @click="corZona = cor.valor"
-            ></div>
-          </div>
-        </div>
-        <div class="entrada-raio">
-          <label>Raio</label>
-          <div class="conteudo-raio">
-            <input
-              type="range"
-              v-model="raioZona"
-              min="100"
-              max="500"
-              step="50"
-              value="50"
-              class="form-control label"
-              :style="estiloSlider"
-            />
-            <div class="valorRaio">{{ raioZona }}m</div>
-          </div>
-        </div>
-      </div>
-      <button class="add-geocercas" @click="selecionarLocal">Adicionar</button>
-      <button class="ver-zonas" @click="abrirBarra('zonasAtivas')">
-        Zonas ativas
-      </button>
-    </div>
-
-    <div v-if="conteudoBarra === 'zonasAtivas'"></div>
-
-    <div v-if="conteudoBarra === 'historico'">
-      <h3>Histórico de Movimentação</h3>
-    </div>
-
-    <div v-if="conteudoBarra === 'config'">
-      <h3>Configurações da Conta</h3>
-    </div>
+    <router-view @abrir="abrirBarra"  @fechar-barra="visivelBarra = false"/>
   </barraLateral>
 </template>
 
 <script setup>
-import { database, auth } from "@/firebase/config";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { onValue, ref as dbRef } from "firebase/database";
+import { ref as vueRef, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { onAuthStateChanged } from 'firebase/auth'
+import { onValue, ref as dbRef } from 'firebase/database'
 
-import { ref as vueRef, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import { auth, database } from '@/firebase'
+import marcadorIcone from '../assets/imgs/marcador.svg'
+import barraLateral from '../components/barraLateral.vue'
+import { useGeofences } from '../composables/useGeofence'
 
-import marcadorIcone from "../assets/imgs/marcador.svg";
-import barraLateral from "../components/barraLateral.vue";
-import { useGeofences } from "../composables/useGeofence";
+const router = useRouter()
 
-const { geofences, carregarGeofences, salvarGeofences } = useGeofences();
-const rota = useRouter();
+const {
+  geofences,
+  carregarGeofences,
+  salvarGeofences,
+  verificarDentroZona,
+  visivelBarraGlobal, 
+  nomeZona,
+  raioZona,
+  corZona,
+  modoSelecao,
+} = useGeofences()
 
-//Sair da conta
 
-async function sairConta() {
-  try {
-    await signOut(auth);
-  } catch (error) {
-    console.error("Erro ao sair:", error);
+
+const usuarioId = vueRef(null)
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    usuarioId.value = user.uid
+    await carregarGeofences(user.uid)
+    console.log('Geofences carregadas:', geofences.value)
+    if (!mapaGoogle) iniciarMapa()
+  } else {
+    usuarioId.value = null
+    if (mapaGoogle) destruirMapa()
+    router.push('/app/login')
   }
+})
+
+// Barra lateral
+
+const visivelBarra = vueRef(false)
+const nomeBarra = vueRef('')
+
+const labelsBarra = {
+  pets: 'Pets',
+  configuracoes: 'Configurações',
+  alertas: 'Alertas',
+  zonasAtivas: 'Zonas ativas',
+  geofences: 'Geofences',
+  menu: 'Menu',
 }
 
-//Ver se o usuario está logado
-
-let usuarioId = vueRef(null);
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    usuarioId = user.uid;
-    console.log("Usuário autenticado:", usuarioId);
-
-    if (!mapaGoogle) iniciarMapa();
-
-    carregarGeofences(user.uid);
-  } else {
-    console.log("Usuário não autenticado");
-    if (mapaGoogle) destruirMapa();
-    rota.push("/cademeupet/app/login");
-  }
-});
-
-//Barra Lateral
-
-const visivelBarra = vueRef(false);
-const conteudoBarra = vueRef("");
-const nomeBarra = vueRef("");
-
 function abrirBarra(tipo) {
-  conteudoBarra.value = tipo;
+  nomeBarra.value = labelsBarra[tipo] || ''
+  visivelBarra.value = true
 
-  if (tipo === "pets") nomeBarra.value = "Pets";
-  if (tipo === "geofences") nomeBarra.value = "Geofences";
-  if (tipo === "historico") nomeBarra.value = "Histórico";
-  if (tipo === "config") nomeBarra.value = "Configurações";
-  if (tipo === "zonasAtivas") nomeBarra.value = "Zonas ativas";
+  const arrayRotas = [
+    'pets',
+    'configuracoes',
+    'alertas',
+    'menu',
+    'zonasAtivas',
+    'geofences',
+  ]
 
-  visivelBarra.value = true;
+  if (arrayRotas.includes(tipo)) {
+    console.log(nomeBarra.value)
+    router.push({ name: tipo })
+  }
 }
 
 function gerenciarVoltar() {
-  if (conteudoBarra.value === "zonasAtivas") {
-    conteudoBarra.value = "geofences";
-    nomeBarra.value = "Geofences";
+  const rotaAtual = router.currentRoute.value.name
 
-    return;
+  if (
+    isMobile() &&
+    (rotaAtual === 'pets' ||
+      rotaAtual === 'geofences' ||
+      rotaAtual === 'alertas')
+  ) {
+    nomeBarra.value = labelsBarra.menu
+    router.push({ name: 'menu' })
+    return
   }
 
-  visivelBarra.value = false;
+  visivelBarra.value = false
+  router.push('/app/mapa')
 }
 
-//Mapa Google Maps
+function abrirMenu() {
+  if (!isMobile()) return
+  abrirBarra('menu')
+}
 
-let mapaGoogle = null;
-let marcador;
-let mapaPronto = vueRef(false);
+watch(() => router.currentRoute.value.name, (novaRota) => {
+  if (novaRota && labelsBarra[novaRota]) {
+    nomeBarra.value = labelsBarra[novaRota]
+  }
+})
+
+watch(visivelBarra, (v) => {
+  visivelBarraGlobal.value = v
+})
+
+watch(visivelBarraGlobal, (v) => {
+  visivelBarra.value = v
+})
+
+// Mapa Google
+
+let mapaGoogle = null
+let marcador
+const mapaPronto = vueRef(false)
 
 function iniciarMapa() {
-  const pos = { lat: -12.9714, lng: -38.5014 };
+  const pos = { lat: -12.9714, lng: -38.5014 }
 
-  mapaGoogle = new google.maps.Map(document.getElementById("mapa"), {
+  mapaGoogle = new google.maps.Map(document.getElementById('mapa'), {
     zoom: 16,
     center: pos,
-  });
+  })
 
   marcador = new google.maps.Marker({
     position: pos,
@@ -185,14 +162,22 @@ function iniciarMapa() {
       url: marcadorIcone,
       scaledSize: new google.maps.Size(30, 30),
     },
-  });
+  })
+  mapaPronto.value = true
 
-  mapaPronto.value = true;
+  if (geofences.value.length > 0) {
+    limparDesenhos()
+    geofences.value.forEach((dadosDaCerca) => {
+      desenharCirculoNoMapa(dadosDaCerca)
+    })
+  }
 
-  mapaGoogle.addListener("click", async (evento) => {
+// Clique no mapa para salvar geofence
+
+  mapaGoogle.addListener('click', async (evento) => {
     if (modoSelecao.value === true) {
-      const lat = evento.latLng.lat();
-      const lng = evento.latLng.lng();
+      const lat = parseFloat(evento.latLng.lat().toFixed(8))
+      const lng = parseFloat(evento.latLng.lng().toFixed(8))
 
       try {
         await salvarGeofences(
@@ -200,48 +185,81 @@ function iniciarMapa() {
           lng,
           Number(raioZona.value),
           nomeZona.value,
-          corZona.value
-        );
+          corZona.value,
+          usuarioId.value,
+        )
 
-        modoSelecao.value = false;
-        Number(raioZona.value);
-        corZona.value;
-        nomeZona.value = "";
+        modoSelecao.value = false
+        raioZona.value = 50
+        nomeZona.value = ''
 
-        alert("Zona salva com sucesso!");
+        alert('Zona salva com sucesso!')
       } catch (error) {
-        console.log("Erro ao salvar a zona", error);
+        console.log('Erro ao salvar a zona', error)
       }
     }
-  });
+  })
 
-  const localizacaoRef = dbRef(database, "localizacao_atual");
-  onValue(localizacaoRef, (snapshot) => {
-    if (mapaPronto && snapshot.val()?.lat) {
-      const novaPos = { lat: snapshot.val().lat, lng: snapshot.val().lng };
-      marcador.setPosition(novaPos);
-      mapaGoogle.setCenter(novaPos);
+// Verificar posição atual
+
+  const localizacaoRef = dbRef(database, 'localizacao_atual')
+onValue(localizacaoRef, (snapshot) => {
+  const dados = snapshot.val()
+  console.log('loc_atual:', dados)
+
+  if (mapaPronto.value && dados && dados.lat && dados.lng) {
+    const novaPos = { lat: dados.lat, lng: dados.lng }
+
+    marcador.setPosition(novaPos) 
+    mapaGoogle.setCenter(novaPos)
+
+    if (geofences.value.length > 0) {
+      const posicaoMarcador = marcador.getPosition()
+      const posAtual = {
+        lat: posicaoMarcador.lat(),
+        lng: posicaoMarcador.lng()
+      }
+      
+      const estaDentro = verificarDentroZona(posAtual)
+      console.log('Está dentro de alguma zona?', estaDentro)
+    } else {
+      console.log('Sem geofences')
     }
-  });
+  } else {
+    console.log('Mapa não pronto ou localização inválida')
+  }
+});
 }
 
 function destruirMapa() {
   if (mapaGoogle) {
-    document.getElementById("mapa").innerHTML = "";
-    mapaGoogle = null;
+    document.getElementById('mapa').innerHTML = ''
+    mapaGoogle = null
   }
 }
 
-// Circulo para geofences
+function centralizarMapa() {
+  visivelBarra.value = false
+
+  if (marcador && marcador.getPosition()) {
+    const pos = marcador.getPosition()
+    mapaGoogle.setCenter({ lat: pos.lat(), lng: pos.lng() })
+    mapaGoogle.setZoom(16)
+  }
+}
+
+// Desenho das geofences
+const geofenceCirculo = vueRef([])
 
 function limparDesenhos() {
-  geofenceCirculo.value.forEach((circulo) => circulo.setMap(null));
-  geofenceCirculo.value = [];
+  geofenceCirculo.value.forEach((circulo) => circulo.setMap(null))
+  geofenceCirculo.value = []
 }
 
 function desenharCirculoNoMapa(cercaDados) {
-  const corDaCerca = cercaDados.cor;
-  if (!mapaGoogle) return;
+  if (!mapaGoogle) return
+
+  const corDaCerca = cercaDados.cor
 
   const novoCirculo = new google.maps.Circle({
     strokeColor: corDaCerca,
@@ -252,50 +270,31 @@ function desenharCirculoNoMapa(cercaDados) {
     map: mapaGoogle,
     center: { lat: cercaDados.lat, lng: cercaDados.lng },
     radius: cercaDados.raio,
-  });
+  })
 
-  geofenceCirculo.value.push(novoCirculo);
+  geofenceCirculo.value.push(novoCirculo)
 }
 
 watch(
   geofences,
   (listaAtualizada) => {
-    limparDesenhos();
-
+    if (!mapaGoogle) return
+    limparDesenhos()
     listaAtualizada.forEach((dadosDaCerca) => {
-      desenharCirculoNoMapa(dadosDaCerca);
-    });
+      desenharCirculoNoMapa(dadosDaCerca)
+    })
   },
   { deep: true }
-);
+)
 
-onMounted(() => {
-  iniciarMapa();
-});
-
-// Geofences
-
-let geofenceCirculo = vueRef([]);
-const nomeZona = vueRef("");
-const raioZona = vueRef(50);
-const modoSelecao = vueRef(false);
-const corZona = vueRef("#3264fe");
-
-const opcoesCores = [
-  { valor: "#ff4d4d", hexa: "#ff4d4d", nome: "vermelho" },
-  { valor: "#ff9f43", hexa: "#ff9f43", nome: "laranja" },
-  { valor: "#2ecc71", hexa: "#2ecc71", nome: "verde" },
-  { valor: "#3264fe", hexa: "#3264fe", nome: "azul" },
-  { valor: "#5f1bff", hexa: "#5f1bff", nome: "roxo" },
-];
-
-function selecionarLocal() {
-  visivelBarra.value = false;
-  modoSelecao.value = true;
+function isMobile() {
+  return window.innerWidth <= 940
 }
+
 </script>
 
 <style scoped>
+
 /* Mapa */
 
 .mapa {
@@ -311,7 +310,6 @@ function selecionarLocal() {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  height: 100%;
 }
 
 .nav-bar {
@@ -322,9 +320,9 @@ function selecionarLocal() {
   transform: translateX(-50%);
   z-index: 997;
   width: 80%;
-  border-radius: 60px;
+  border-radius: 1.8rem;
   background: linear-gradient(white 0%, white 70%) padding-box,
-    linear-gradient(-90deg, #e0e0e0, #b4b9fd94) border-box;
+    linear-gradient(-90deg, #e0e0e0, hsla(226, 100%, 90%, 0.58)) border-box;
   border: 2px solid transparent;
 }
 
@@ -350,155 +348,23 @@ function selecionarLocal() {
 
 .div-config {
   display: flex;
-  gap: 1.5rem;
+  justify-content: center;
+  border-radius: 1rem;
 }
 
 .div-config img {
   height: 25px;
   cursor: pointer;
+  transition: transform 0.5s ease;
 }
 
-/* Geofences */
-
-.entrada-grupo {
-  display: flex;
-  flex-direction: column;
-  padding: 2rem 0;
+.div-config img:hover {
+  transform: rotate(20deg);
 }
 
-.entrada-nome {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  padding: 1rem 0 0.5rem 0;
+.div-menu {
+  display: none;
 }
-
-input {
-  padding: 10px;
-  height: 5.2vh;
-  border-radius: 1rem;
-  color: var(--cinza);
-  font-size: 1rem;
-  font-weight: 600;
-  border: 1px solid transparent;
-}
-
-.entrada-nome input::placeholder {
-  color: var(--cinza);
-  font-weight: 500;
-}
-
-.entrada-nome input:focus {
-  outline: none;
-  border: 1px solid #5f1bff;
-}
-
-label {
-  font-weight: 600;
-  font-size: 1.2rem;
-  margin-bottom: 3px;
-  color: var(--cinza-escuro);
-}
-
-.seletorCor {
-  padding: 2rem 0;
-}
-
-.conteudo-cores {
-  display: flex;
-  gap: 15px;
-  margin-top: 10px;
-}
-
-.cores {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: 2px solid transparent;
-}
-
-.cores:hover {
-  transform: scale(1.1);
-}
-
-.cores.selecionada {
-  transform: scale(1.05);
-  box-shadow: 0 0 0 1px white, 0 0 0 3px #5f1bff;
-}
-
-.entrada-raio {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  width: 100%;
-  padding: 1rem 0 5rem 0;
-}
-
-.entrada-raio input {
-  width: 80%;
-  accent-color: var(--roxo);
-  padding: 0;
-  background-color: transparent;
-}
-.entrada-raio input:hover {
-  opacity: 0.8;
-}
-
-.conteudo-raio {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.valorRaio {
-  background-color: #dddddd;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  color: var(--roxo);
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.add-geocercas {
-  margin: 1rem 0;
-  height: 5.4vh;
-  width: 100%;
-  background-color: var(--cinza-escuro);
-  color: var(--gelo);
-  font-weight: 600;
-  font-size: 1.2rem;
-  border: none;
-  border-radius: 15px;
-  transition: background-color 0.3s ease;
-}
-
-.add-geocercas:hover,
-.ver-zonas:hover {
-  cursor: pointer;
-}
-
-.add-geocercas:active,
-.ver-zonas:active {
-  transform: scale(0.98);
-}
-
-.ver-zonas {
-  height: 4.4vh;
-  width: 100%;
-  background-color: var(--gelo);
-  color: var(--azul-claro);
-  font-weight: 550;
-  font-size: 1rem;
-  border: none;
-  border-radius: 14px;
-  transition: background-color 0.3s ease;
-}
-
 
 @media (max-width: 940px) {
   .nav-links {

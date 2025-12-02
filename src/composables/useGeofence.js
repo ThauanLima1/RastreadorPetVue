@@ -1,104 +1,101 @@
-import { ref as refVue } from "vue";
-import { auth, database } from "@/firebase/config";
-import { ref as refFb, onValue, push, set, remove} from "firebase/database";
+import { ref as vueRef } from "vue";
+import { database } from "@/firebase";
+import { ref as dbRef, push, set, get, remove } from "firebase/database";
+
+const geofences = vueRef([]);
+
+const nomeZona = vueRef("");
+const raioZona = vueRef(50);
+const corZona = vueRef("#3264fe");
+const modoSelecao = vueRef(false);
+const visivelBarraGlobal = vueRef(false);
+
+const usuarioIdGlobal = vueRef(null);
 
 export function useGeofences() {
-  const geofences = refVue([]);
-  const dentroZona = refVue(false);
+  async function carregarGeofences(usuarioId) {
+    usuarioIdGlobal.value = usuarioId;
 
+    const ref = dbRef(database, `usuarios/${usuarioId}/geofences`);
+    const snapshot = await get(ref);
+    const dados = snapshot.val() || {};
 
-  function carregarGeofences(usuarioId) {
-    const geofencesRef = refFb(database, `usuarios/${usuarioId}/geofences`);
-
-    onValue(geofencesRef, (snapshot) => {
-      const dados = snapshot.val();
-      geofences.value = [];
-
-      if (dados) {
-        Object.keys(dados).forEach((key) => {
-          geofences.value.push({ id: key, ...dados[key] });
-        });
-      }
-    });
+    geofences.value = Object.keys(dados).map((id) => ({
+      id,
+      ...dados[id],
+      raio: Number(dados[id].raio),
+    }));
   }
 
+  async function salvarGeofences(lat, lng, raio, nome, cor, usuarioId) {
+    const ref = dbRef(database, `usuarios/${usuarioId}/geofences`);
+    const novaRef = push(ref);
+    const novaZona = { lat, lng, raio, nome, cor };
 
-
-  async function salvarGeofences(lat, lng, raio, nome, cor) {
-    const usuarioId = auth.currentUser?.uid;
-    if (!usuarioId) throw new Error("Usuário não logado");
-
-    const geofencesRef = refFb(database, `/usuarios/${usuarioId}/geofences`);
-    const NovoGeofencesRef = push(geofencesRef);
-
-    await set(NovoGeofencesRef, {
-      lat,
-      lng,
-      raio,
-      nome,
-      cor: cor,
-      ativa: true,
-      criada_em: Date.now(),
-    });
+    await set(novaRef, novaZona);
+    geofences.value.push({ id: novaRef.key, ...novaZona });
   }
 
+  function verificarDentroZona(posicaoAtual) {
+    if (!geofences.value || geofences.value.length === 0) {
+      console.log("Sem geofences para verificar");
+      return false;
+    }
 
+    console.log("Posição atual:", posicaoAtual);
+    console.log("Geofences:", geofences.value);
 
-  async function excluirZona(zonaId) {
-    const usuarioId = auth.currentUser?.uid;
-    if (!usuarioId) return;
+    const dentroDeAlgumaZona = geofences.value.some((zona) => {
+      const R = 6371000;
+      const lat1 = (posicaoAtual.lat * Math.PI) / 180;
+      const lat2 = (zona.lat * Math.PI) / 180;
+      const deltaLat = ((zona.lat - posicaoAtual.lat) * Math.PI) / 180;
+      const deltaLng = ((zona.lng - posicaoAtual.lng) * Math.PI) / 180;
 
-    const zonaRef = refFb(
-      database,
-      `/usuarios/${usuarioId}/geofences/${zonaId}`
-    );
-    await remove(zonaRef);
-  }
+      const a =
+        Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+        Math.cos(lat1) *
+          Math.cos(lat2) *
+          Math.sin(deltaLng / 2) *
+          Math.sin(deltaLng / 2);
 
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distancia = R * c;
 
-
-  function calcularDistancia(lat1, lng1, lat2, lng2) {
-    const R = 6371e3;
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lng2 - lng1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
-
-
-
-  function VerificarDentroZona(posicaoAtual) {
-    if (!posicaoAtual || geofences.value.length === 0) return false;
-
-    const dentro = geofences.value.some((zona) => {
-      if (!zona.ativa) return false;
-      const distancia = calcularDistancia(
-        posicaoAtual.lat,
-        posicaoAtual.lng,
-        zona.lat,
-        zona.lng
+      console.log(
+        `Zona: ${zona.nome}, Distância: ${distancia.toFixed(2)}m, Raio: ${
+          zona.raio
+        }m, Dentro: ${distancia <= zona.raio}`
       );
+
       return distancia <= zona.raio;
     });
 
-    dentroZona.value = dentro;
-    return dentro;
+    return dentroDeAlgumaZona;
   }
 
+  async function excluirZona(id) {
+    if (!usuarioIdGlobal.value) return;
 
-  
+    const refZona = dbRef(
+      database,
+      `usuarios/${usuarioIdGlobal.value}/geofences/${id}`
+    );
+
+    await remove(refZona);
+    geofences.value = geofences.value.filter((z) => z.id !== id);
+  }
+
   return {
     geofences,
     carregarGeofences,
     salvarGeofences,
+    verificarDentroZona,
     excluirZona,
-    VerificarDentroZona,
-    dentroZona,
+    visivelBarraGlobal,
+    nomeZona,
+    raioZona,
+    corZona,
+    modoSelecao,
   };
 }

@@ -15,7 +15,7 @@
 
         <div class="divisor">Ou</div>
 
-        <form  @submit.prevent="fazerLogin">
+        <form @submit.prevent="fazerLogin">
           <div class="form-grupo">
             <label>Email</label>
             <input
@@ -66,13 +66,13 @@
 
         <div class="cadastro-link">
           Não tem uma conta ainda?
-          <router-link to="/cademeupet/app/cadastro">Cadastre-se</router-link>
+          <router-link to="/app/cadastro">Cadastre-se</router-link>
         </div>
       </div>
     </div>
 
     <div class="section-direita">
-      <img src="@/assets/imgs/cachorro.jpg"/>
+      <img src="@/assets/imgs/cachorro.jpg" />
     </div>
   </div>
 
@@ -87,12 +87,12 @@ import Botao from "@/components/botao.vue";
 import RecuperarSenha from "@/components/recuperarSenha.vue";
 
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "@/firebase/config.js";
+import { auth, googleProvider } from "@/firebase/index.js";
 
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
-const rota = useRouter();
+const router = useRouter();
 
 const email = ref("");
 const senha = ref("");
@@ -100,28 +100,24 @@ const mostrarSenha = ref(false);
 const mostrarConteudo = ref(false);
 
 async function fazerLogin() {
-  
   try {
     await signInWithEmailAndPassword(auth, email.value, senha.value);
 
-    rota.push("/cademeupet/app/mapa");
-
+    router.push("/app/mapa");
   } catch (error) {
     console.error("Erro ao fazer login:", error);
   }
 }
 
 async function loginComGoogle() {
-
-  try{
+  try {
     await signInWithPopup(auth, googleProvider);
 
-    rota.push("/cademeupet/app/mapa");
-  }catch(error){
+    router.push("/app/mapa");
+  } catch (error) {
     console.error("Erro ao fazer login:", error);
   }
 }
-
 </script>
 
 <style scoped>

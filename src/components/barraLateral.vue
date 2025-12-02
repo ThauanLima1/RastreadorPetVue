@@ -83,7 +83,7 @@ function voltar() {
 .barra-lateral h3 {
   padding: 20px 0 0 0;
   font-size: 2.5rem;
-  background: linear-gradient(to right, #021230 30%, #d0cfff8a 70%);
+  background: linear-gradient(to right, #021230 30%, #d0cfff8a 75%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
