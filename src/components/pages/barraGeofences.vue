@@ -85,7 +85,6 @@ function ativarSelecaoNoMapa() {
  
   visivelBarraGlobal.value = false;
   modoSelecao.value = true;
- 
 }
 
 function abrirZonasAtivas() {

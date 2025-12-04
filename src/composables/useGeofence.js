@@ -9,7 +9,6 @@ const raioZona = vueRef(50);
 const corZona = vueRef("#3264fe");
 const modoSelecao = vueRef(false);
 const visivelBarraGlobal = vueRef(false);
-
 const usuarioIdGlobal = vueRef(null);
 
 export function useGeofences() {

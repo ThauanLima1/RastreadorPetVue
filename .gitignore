@@ -8,7 +8,7 @@
     lerna-debug.log*
 
     src/firebase/config.js
-    node_modules
+    node_modules/
 
     .DS_Store
     dist

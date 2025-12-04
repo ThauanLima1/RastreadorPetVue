@@ -61,7 +61,7 @@
             >
           </div>
 
-          <Botao type="submit">Entrar</Botao>
+          <Botao type="submit" :disabled="carregando" :carregando="carregando">Entrar</Botao>
         </form>
 
         <div class="cadastro-link">
@@ -98,24 +98,31 @@ const email = ref("");
 const senha = ref("");
 const mostrarSenha = ref(false);
 const mostrarConteudo = ref(false);
+const carregando = ref(false);
 
 async function fazerLogin() {
+   carregando.value = true;
   try {
     await signInWithEmailAndPassword(auth, email.value, senha.value);
 
     router.push("/app/mapa");
   } catch (error) {
     console.error("Erro ao fazer login:", error);
+  } finally {
+     carregando.value = false;
   }
 }
 
 async function loginComGoogle() {
+  carregando.value = true;
   try {
     await signInWithPopup(auth, googleProvider);
 
     router.push("/app/mapa");
   } catch (error) {
     console.error("Erro ao fazer login:", error);
+  } finally {
+    carregando.value = false;
   }
 }
 </script>

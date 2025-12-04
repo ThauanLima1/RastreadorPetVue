@@ -74,7 +74,7 @@
               placeholder="123456"
             />
           </div>
-          <Botao type="submit">Cadastrar</Botao>
+          <Botao type="submit" :disabled="carregando" :carregando="carregando">Cadastrar</Botao>
         </form>
 
         <div class="login-link">
@@ -93,20 +93,38 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth, googleProvider } from "@/firebase/index.js";
 import { signInWithPopup } from "firebase/auth";
 
-import { ref } from "vue";
+import { ref as vueRef} from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-const usuario = ref("");
-const email = ref("");
-const senha = ref("");
-const confirmarSenha = ref("");
-const mostrarSenha = ref(false);
+const usuario = vueRef("");
+const email = vueRef("");
+const senha = vueRef("");
+const confirmarSenha = vueRef("");
+const mostrarSenha = vueRef(false);
+const carregando = vueRef(false);
+
+
+function validarCadastro(usuario, email, senha) {
+  if (!usuario.trim()) return "Nome de usuário é obrigatório.";
+  if (!email.trim()) return "Email é obrigatório.";
+  if (!senha.trim()) return "Senha é obrigatória.";
+  if (senha.trim().length < 6) return "Senha deve ter pelo menos 6 caracteres.";
+  return null;
+}
 
 async function cadastrarUsuario() {
+  carregando.value = true;
+
   if (senha.value !== confirmarSenha.value) {
     alert("As senhas não coincidem!");
+    return;
+  }
+
+  const erro = validarCadastro(usuario.value, email.value, senha.value);
+  if (erro) {
+    console.error(erro);
     return;
   }
 
@@ -125,16 +143,25 @@ async function cadastrarUsuario() {
     router.push("/app/mapa");
   } catch (error) {
     console.error("Erro ao cadastrar usuário:", error);
+
+  } finally {
+    carregando.value = false;
   }
 }
 
 async function loginComGoogle() {
+  
+
   try {
     await signInWithPopup(auth, googleProvider);
+    
+    carregando.value = true;
 
     router.push("/app/mapa");
   } catch (error) {
     console.error("Erro ao fazer login:", error);
+  } finally {
+    carregando.value = false;
   }
 }
 </script>

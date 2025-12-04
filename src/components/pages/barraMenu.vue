@@ -1,6 +1,5 @@
 <template>
   <div class="menu-container">
-    <h2 class="menu-titulo">Menu</h2>
 
     <div class="menu-itens">
       <button class="menu-item" @click="abrir('pets')">
@@ -13,10 +12,6 @@
 
       <button class="menu-item" @click="abrir('alertas')">
         Alertas
-      </button>
-
-      <button class="menu-item" @click="abrir('configuracoes')">
-        Configurações
       </button>
     </div>
   </div>
@@ -44,8 +39,19 @@ function abrir(tipo) {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 0;
+  padding: 0.7rem 0.5rem;
   border-radius: 0.8rem;
+  border: none;
+  font-size: 1.5rem;
+  background-color: #ececec;
+  color: var(--cinza-escuro);
+  cursor: pointer;
+  transition: 0.2s ease all;
+}
+
+.menu-item:hover{
+  background-color: var(--roxo);
+  color: var(--branco);
 }
 
 </style>
