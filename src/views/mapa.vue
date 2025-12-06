@@ -17,7 +17,15 @@
       </div>
     </div>
   </nav>
-
+  <div class="popup">
+    <div class="online">
+      <span> </span>
+      <p>Online</p>
+    </div>
+    <p>Lat: {{ posicaoAtual.lat.toFixed(6) }}</p>
+    <p>Lng: {{ posicaoAtual.lng.toFixed(6) }}</p>
+    <p>Vel:  {{ posicaoAtual.velocidade_kmh?.toFixed(1) || 0}} Km</p>
+  </div>
   <div id="mapa" class="mapa"></div>
 
   <barraLateral
@@ -25,135 +33,141 @@
     :nome="nomeBarra"
     @voltar="gerenciarVoltar"
   >
-    <router-view @abrir="abrirBarra"  @fechar-barra="visivelBarra = false"/>
+    <router-view @abrir="abrirBarra" @fechar-barra="visivelBarra = false" />
   </barraLateral>
 </template>
 
 <script setup>
-import { ref as vueRef, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { onAuthStateChanged } from 'firebase/auth'
-import { onValue, ref as dbRef } from 'firebase/database'
+import { ref as vueRef, watch } from "vue";
+import { useRouter } from "vue-router";
+import { onAuthStateChanged } from "firebase/auth";
+import { onValue, ref as dbRef } from "firebase/database";
 
-import { auth, database } from '@/firebase'
-import marcadorIcone from '../assets/imgs/marcador.svg'
-import barraLateral from '../components/barraLateral.vue'
-import { useGeofences } from '../composables/useGeofence'
+import { auth, database } from "@/firebase";
+import marcadorIcone from "../assets/imgs/marcador.svg";
+import barraLateral from "../components/barraLateral.vue";
+import { useGeofences } from "../composables/useGeofence";
 
-const router = useRouter()
+const router = useRouter();
 
 const {
   geofences,
   carregarGeofences,
   salvarGeofences,
   verificarDentroZona,
-  visivelBarraGlobal, 
+  visivelBarraGlobal,
   nomeZona,
   raioZona,
   corZona,
   modoSelecao,
-} = useGeofences()
+} = useGeofences();
 
-
-
-const usuarioId = vueRef(null)
+const usuarioId = vueRef(null);
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    usuarioId.value = user.uid
-    await carregarGeofences(user.uid)
-    console.log('Geofences carregadas:', geofences.value)
-    if (!mapaGoogle) iniciarMapa()
+    usuarioId.value = user.uid;
+    await carregarGeofences(user.uid);
+    console.log("Geofences carregadas:", geofences.value);
+    if (!mapaGoogle) iniciarMapa();
   } else {
-    usuarioId.value = null
-    if (mapaGoogle) destruirMapa()
-    router.push('/app/login')
+    usuarioId.value = null;
+    if (mapaGoogle) destruirMapa();
+    router.push("/app/login");
   }
-})
+});
 
 // Barra lateral
 
-const visivelBarra = vueRef(false)
-const nomeBarra = vueRef('')
+const visivelBarra = vueRef(false);
+const nomeBarra = vueRef("");
 
 const labelsBarra = {
-  pets: 'Pets',
-  configuracoes: 'Configurações',
-  alertas: 'Alertas',
-  zonasAtivas: 'Zonas ativas',
-  geofences: 'Geofences',
-  menu: 'Menu',
-}
+  pets: "Pets",
+  configuracoes: "Configurações",
+  alertas: "Alertas",
+  zonasAtivas: "Zonas ativas",
+  geofences: "Geofences",
+  menu: "Menu",
+};
 
 function abrirBarra(tipo) {
-  nomeBarra.value = labelsBarra[tipo] || ''
-  visivelBarra.value = true
+  nomeBarra.value = labelsBarra[tipo] || "";
+  visivelBarra.value = true;
 
   const arrayRotas = [
-    'pets',
-    'configuracoes',
-    'alertas',
-    'menu',
-    'zonasAtivas',
-    'geofences',
-  ]
+    "pets",
+    "configuracoes",
+    "alertas",
+    "menu",
+    "zonasAtivas",
+    "geofences",
+  ];
 
   if (arrayRotas.includes(tipo)) {
-    console.log(nomeBarra.value)
-    router.push({ name: tipo })
+    console.log(nomeBarra.value);
+    router.push({ name: tipo });
   }
 }
 
 function gerenciarVoltar() {
-  const rotaAtual = router.currentRoute.value.name
+  const rotaAtual = router.currentRoute.value.name;
 
   if (
     isMobile() &&
-    (rotaAtual === 'pets' ||
-      rotaAtual === 'geofences' ||
-      rotaAtual === 'alertas')
+    (rotaAtual === "pets" ||
+      rotaAtual === "geofences" ||
+      rotaAtual === "alertas")
   ) {
-    nomeBarra.value = labelsBarra.menu
-    router.push({ name: 'menu' })
-    return
+    nomeBarra.value = labelsBarra.menu;
+    router.push({ name: "menu" });
+    return;
   }
 
-  visivelBarra.value = false
-  router.push('/app/mapa')
+  visivelBarra.value = false;
+  router.push("/app/mapa");
 }
 
 function abrirMenu() {
-  if (!isMobile()) return
-  abrirBarra('menu')
+  if (!isMobile()) return;
+  abrirBarra("menu");
 }
 
-watch(() => router.currentRoute.value.name, (novaRota) => {
-  if (novaRota && labelsBarra[novaRota]) {
-    nomeBarra.value = labelsBarra[novaRota]
+watch(
+  () => router.currentRoute.value.name,
+  (novaRota) => {
+    if (novaRota && labelsBarra[novaRota]) {
+      nomeBarra.value = labelsBarra[novaRota];
+    }
   }
-})
+);
 
 watch(visivelBarra, (v) => {
-  visivelBarraGlobal.value = v
-})
+  visivelBarraGlobal.value = v;
+});
 
 watch(visivelBarraGlobal, (v) => {
-  visivelBarra.value = v
-})
+  visivelBarra.value = v;
+});
 
 // Mapa Google
 
-let mapaGoogle = null
-let marcador
-const mapaPronto = vueRef(false)
+let mapaGoogle = null;
+let marcador;
+const mapaPronto = vueRef(false);
+const posicaoAtual = vueRef({
+  lat: 0,
+  lng: 0,
+  velocidade_kmh: 0,
+});
 
 function iniciarMapa() {
-  const pos = { lat: -12.9714, lng: -38.5014 }
+  const pos = { lat: -12.9714, lng: -38.5014 };
 
-  mapaGoogle = new google.maps.Map(document.getElementById('mapa'), {
+  mapaGoogle = new google.maps.Map(document.getElementById("mapa"), {
     zoom: 16,
     center: pos,
-  })
+  });
 
   marcador = new google.maps.Marker({
     position: pos,
@@ -162,22 +176,22 @@ function iniciarMapa() {
       url: marcadorIcone,
       scaledSize: new google.maps.Size(30, 30),
     },
-  })
-  mapaPronto.value = true
+  });
+  mapaPronto.value = true;
 
   if (geofences.value.length > 0) {
-    limparDesenhos()
+    limparDesenhos();
     geofences.value.forEach((dadosDaCerca) => {
-      desenharCirculoNoMapa(dadosDaCerca)
-    })
+      desenharCirculoNoMapa(dadosDaCerca);
+    });
   }
 
-// Clique no mapa para salvar geofence
+  // Clique no mapa para salvar geofence
 
-  mapaGoogle.addListener('click', async (evento) => {
+  mapaGoogle.addListener("click", async (evento) => {
     if (modoSelecao.value === true) {
-      const lat = parseFloat(evento.latLng.lat().toFixed(8))
-      const lng = parseFloat(evento.latLng.lng().toFixed(8))
+      const lat = parseFloat(evento.latLng.lat().toFixed(8));
+      const lng = parseFloat(evento.latLng.lng().toFixed(8));
 
       try {
         await salvarGeofences(
@@ -186,80 +200,82 @@ function iniciarMapa() {
           Number(raioZona.value),
           nomeZona.value,
           corZona.value,
-          usuarioId.value,
-        )
+          usuarioId.value
+        );
 
-        modoSelecao.value = false
-        raioZona.value = 50
-        nomeZona.value = ''
+        modoSelecao.value = false;
+        raioZona.value = 50;
+        nomeZona.value = "";
 
-        alert('Zona salva com sucesso!')
+        alert("Zona salva com sucesso!");
       } catch (error) {
-        console.log('Erro ao salvar a zona', error)
+        console.log("Erro ao salvar a zona", error);
       }
     }
-  })
+  });
 
-// Verificar posição atual
+  // Verificar posição atual
 
-  const localizacaoRef = dbRef(database, 'localizacao_atual')
+  const localizacaoRef = dbRef(database, "localizacao_atual");
 onValue(localizacaoRef, (snapshot) => {
-  const dados = snapshot.val()
-  console.log('loc_atual:', dados)
+  const dados = snapshot.val();
 
   if (mapaPronto.value && dados && dados.lat && dados.lng) {
-    const novaPos = { lat: dados.lat, lng: dados.lng }
 
-    marcador.setPosition(novaPos) 
-    mapaGoogle.setCenter(novaPos)
+    posicaoAtual.value = {
+      lat: dados.lat,
+      lng: dados.lng,
+      velocidade_kmh: dados.velocidade_kmh || 0,
+    };
+
+
+    marcador.setPosition({
+      lat: posicaoAtual.value.lat,
+      lng: posicaoAtual.value.lng,
+    });
+    mapaGoogle.setCenter({
+      lat: posicaoAtual.value.lat,
+      lng: posicaoAtual.value.lng,
+    });
 
     if (geofences.value.length > 0) {
-      const posicaoMarcador = marcador.getPosition()
-      const posAtual = {
-        lat: posicaoMarcador.lat(),
-        lng: posicaoMarcador.lng()
-      }
-      
-      const estaDentro = verificarDentroZona(posAtual)
-      console.log('Está dentro de alguma zona?', estaDentro)
-    } else {
-      console.log('Sem geofences')
+      const estaDentro = verificarDentroZona(posicaoAtual.value);
+      console.log("Está dentro?", estaDentro);
     }
-  } else {
-    console.log('Mapa não pronto ou localização inválida')
   }
 });
+
 }
 
 function destruirMapa() {
   if (mapaGoogle) {
-    document.getElementById('mapa').innerHTML = ''
-    mapaGoogle = null
+    document.getElementById("mapa").innerHTML = "";
+    mapaGoogle = null;
   }
 }
 
 function centralizarMapa() {
-  visivelBarra.value = false
+  visivelBarra.value = false;
 
   if (marcador && marcador.getPosition()) {
-    const pos = marcador.getPosition()
-    mapaGoogle.setCenter({ lat: pos.lat(), lng: pos.lng() })
-    mapaGoogle.setZoom(16)
+    const pos = marcador.getPosition();
+    mapaGoogle.setCenter({ lat: pos.lat(), lng: pos.lng() });
+    mapaGoogle.setZoom(16);
   }
 }
 
 // Desenho das geofences
-const geofenceCirculo = vueRef([])
+const geofenceCirculo = vueRef([]);
 
 function limparDesenhos() {
-  geofenceCirculo.value.forEach((circulo) => circulo.setMap(null))
-  geofenceCirculo.value = []
+  geofenceCirculo.value.forEach((circulo) => circulo.setMap(null));
+  geofenceCirculo.value = [];
 }
 
 function desenharCirculoNoMapa(cercaDados) {
-  if (!mapaGoogle) return
+  if (!mapaGoogle) return;
 
-  const corDaCerca = cercaDados.cor
+  const corDaCerca = cercaDados.cor;
 
   const novoCirculo = new google.maps.Circle({
     strokeColor: corDaCerca,
@@ -270,31 +286,29 @@ function desenharCirculoNoMapa(cercaDados) {
     map: mapaGoogle,
     center: { lat: cercaDados.lat, lng: cercaDados.lng },
     radius: cercaDados.raio,
-  })
+  });
 
-  geofenceCirculo.value.push(novoCirculo)
+  geofenceCirculo.value.push(novoCirculo);
 }
 
 watch(
   geofences,
   (listaAtualizada) => {
-    if (!mapaGoogle) return
-    limparDesenhos()
+    if (!mapaGoogle) return;
+    limparDesenhos();
     listaAtualizada.forEach((dadosDaCerca) => {
-      desenharCirculoNoMapa(dadosDaCerca)
-    })
+      desenharCirculoNoMapa(dadosDaCerca);
+    });
   },
   { deep: true }
-)
+);
 
 function isMobile() {
-  return window.innerWidth <= 940
+  return window.innerWidth <= 940;
 }
-
 </script>
 
 <style scoped>
-
 /* Mapa */
 
 .mapa {
@@ -366,9 +380,53 @@ function isMobile() {
   display: none;
 }
 
+.popup {
+  position: fixed;
+  bottom: 50px;
+  right: 50px;
+  height: auto;
+  width: 250px;
+  padding: 0.7rem 0.7rem 0 0.7rem;
+  z-index: 998;
+  border-radius: 1rem;
+  background: linear-gradient(white 0%, white 70%) padding-box,
+    linear-gradient(-90deg, #e0e0e0, hsla(226, 100%, 90%, 0.58)) border-box;
+}
+
+
+.online{
+  display: flex;
+  align-items: center;
+  padding: 0 0 1rem 0;
+  gap: 0.7rem;
+} 
+
+.online span{
+  height: 10px;
+  width: 10px;
+  border-radius: 50%;
+  background-color: #1aeb9b;
+}
+
+.popup p{
+  padding: 0 0 0.7rem 0;
+  color: var(--cinza);
+  font-size: 0.8rem;
+}
+.online p{
+  padding: 0;
+  color: var(--cinza-escuro);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
 @media (max-width: 940px) {
   .nav-links {
     display: none;
+  }
+
+  .popup{
+    width: 80%;
   }
 }
 </style>
