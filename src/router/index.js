@@ -16,6 +16,7 @@ const routes = [
   path: '/app/mapa',
   component: Mapa,
   children: [
+    
     {
       path: 'configuracoes',
       name: 'configuracoes',
