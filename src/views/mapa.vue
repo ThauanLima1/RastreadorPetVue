@@ -9,7 +9,12 @@
         <a class="nav-texto" @click="centralizarMapa">Mapa</a>
         <a class="nav-texto" @click="abrirBarra('pets')">Pets</a>
         <a class="nav-texto" @click="abrirBarra('geofences')">Geofences</a>
-        <a class="nav-texto" @click="abrirBarra('alertas')">Alertas</a>
+        <a class="nav-texto" @click="abrirBarra('alertas')">
+          Alertas
+          <span v-if="estatisticasAlertas.naoVisualizados > 0" class="badge-alerta">
+            {{ estatisticasAlertas.naoVisualizados }}
+          </span>
+        </a>
       </div>
 
       <div class="div-config" @click="abrirBarra('configuracoes')">
@@ -17,6 +22,7 @@
       </div>
     </div>
   </nav>
+
   <div class="popup">
     <div class="online">
       <span> </span>
@@ -24,9 +30,20 @@
     </div>
     <p>Lat: {{ posicaoAtual.lat.toFixed(6) }}</p>
     <p>Lng: {{ posicaoAtual.lng.toFixed(6) }}</p>
-    <p>Vel:  {{ posicaoAtual.velocidade_kmh?.toFixed(1) || 0}} Km</p>
+    <p>Vel: {{ posicaoAtual.velocidade_kmh?.toFixed(1) || 0}} Km</p>
   </div>
+
   <div id="mapa" class="mapa"></div>
+
+  <PopupAlerta
+    :visivel="!!alertaAtivo"
+    :tipo="alertaAtivo?.tipo || 'alerta'"
+    :titulo="alertaAtivo?.titulo || ''"
+    :mensagem="alertaAtivo?.mensagem || ''"
+    :zonaInfo="alertaAtivo?.zonaInfo || null"
+    :mostrarBotaoMapa="false"
+    @fechar="fecharAlerta"
+  />
 
   <barraLateral
     v-model:visivel="visivelBarra"
@@ -38,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref as vueRef, watch } from "vue";
+import { ref as vueRef, watch, computed } from "vue";
 import { useRouter } from "vue-router";
 import { onAuthStateChanged } from "firebase/auth";
 import { onValue, ref as dbRef } from "firebase/database";
@@ -46,6 +63,7 @@ import { onValue, ref as dbRef } from "firebase/database";
 import { auth, database } from "@/firebase";
 import marcadorIcone from "../assets/imgs/marcador.svg";
 import barraLateral from "../components/barraLateral.vue";
+import PopupAlerta from "../components/PopupAlerta.vue";
 import { useGeofences } from "../composables/useGeofence";
 
 const router = useRouter();
@@ -60,6 +78,11 @@ const {
   raioZona,
   corZona,
   modoSelecao,
+  alertaAtivo,
+  estatisticasAlertas,
+  verificarAlertas,
+  carregarHistoricoAlertas,
+  fecharAlerta
 } = useGeofences();
 
 const usuarioId = vueRef(null);
@@ -68,6 +91,7 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     usuarioId.value = user.uid;
     await carregarGeofences(user.uid);
+    await carregarHistoricoAlertas(user.uid);
     console.log("Geofences carregadas:", geofences.value);
     if (!mapaGoogle) iniciarMapa();
   } else {
@@ -77,7 +101,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Barra lateral
 
 const visivelBarra = vueRef(false);
 const nomeBarra = vueRef("");
@@ -150,7 +173,6 @@ watch(visivelBarraGlobal, (v) => {
   visivelBarra.value = v;
 });
 
-// Mapa Google
 
 let mapaGoogle = null;
 let marcador;
@@ -186,8 +208,6 @@ function iniciarMapa() {
     });
   }
 
-  // Clique no mapa para salvar geofence
-
   mapaGoogle.addListener("click", async (evento) => {
     if (modoSelecao.value === true) {
       const lat = parseFloat(evento.latLng.lat().toFixed(8));
@@ -214,37 +234,37 @@ function iniciarMapa() {
     }
   });
 
-  // Verificar posição atual
-
   const localizacaoRef = dbRef(database, "localizacao_atual");
-onValue(localizacaoRef, (snapshot) => {
-  const dados = snapshot.val();
+  onValue(localizacaoRef, async (snapshot) => {
+    const dados = snapshot.val();
 
-  if (mapaPronto.value && dados && dados.lat && dados.lng) {
+    if (mapaPronto.value && dados && dados.lat && dados.lng) {
+      posicaoAtual.value = {
+        lat: dados.lat,
+        lng: dados.lng,
+        velocidade_kmh: dados.velocidade_kmh || 0,
+      };
 
-    posicaoAtual.value = {
-      lat: dados.lat,
-      lng: dados.lng,
-      velocidade_kmh: dados.velocidade_kmh || 0,
-    };
+      marcador.setPosition({
+        lat: posicaoAtual.value.lat,
+        lng: posicaoAtual.value.lng,
+      });
+      mapaGoogle.setCenter({
+        lat: posicaoAtual.value.lat,
+        lng: posicaoAtual.value.lng,
+      });
 
+        if (geofences.value.length > 0) {
+        const resultado = verificarDentroZona(posicaoAtual.value);
+        console.log("Verificação de zona:", resultado);
 
-    marcador.setPosition({
-      lat: posicaoAtual.value.lat,
-      lng: posicaoAtual.value.lng,
-    });
-    mapaGoogle.setCenter({
-      lat: posicaoAtual.value.lat,
-      lng: posicaoAtual.value.lng,
-    });
-
-    if (geofences.value.length > 0) {
-      const estaDentro = verificarDentroZona(posicaoAtual.value);
-      console.log("Está dentro?", estaDentro);
+        if (!resultado.dentroDeAlgumaZona && resultado.alertasDetectados.length > 0) {
+          console.log("🚨 Pet fora da zona! Criando alerta...");
+          await verificarAlertas(posicaoAtual.value, "Seu Pet");
+        }
+      }
     }
-  }
-});
-
+  });
 }
 
 function destruirMapa() {
@@ -264,7 +284,6 @@ function centralizarMapa() {
   }
 }
 
-// Desenho das geofences
 const geofenceCirculo = vueRef([]);
 
 function limparDesenhos() {
@@ -309,15 +328,11 @@ function isMobile() {
 </script>
 
 <style scoped>
-/* Mapa */
-
 .mapa {
   width: 100%;
   height: 100vh;
   border: none;
 }
-
-/* NavBar */
 
 .conteudo {
   display: flex;
@@ -353,11 +368,38 @@ function isMobile() {
   color: #010a1b;
   transition: all 0.5s ease;
   cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .nav-texto:hover {
   background-color: #ffffff;
   color: #020733cb;
+}
+
+.badge-alerta {
+  background: linear-gradient(135deg, #ff9800, #f44336);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 4px rgba(255, 152, 0, 0);
+  }
 }
 
 .div-config {
@@ -393,27 +435,27 @@ function isMobile() {
     linear-gradient(-90deg, #e0e0e0, hsla(226, 100%, 90%, 0.58)) border-box;
 }
 
-
-.online{
+.online {
   display: flex;
   align-items: center;
   padding: 0 0 1rem 0;
   gap: 0.7rem;
-} 
+}
 
-.online span{
+.online span {
   height: 10px;
   width: 10px;
   border-radius: 50%;
   background-color: #1aeb9b;
 }
 
-.popup p{
+.popup p {
   padding: 0 0 0.7rem 0;
   color: var(--cinza);
   font-size: 0.8rem;
 }
-.online p{
+
+.online p {
   padding: 0;
   color: var(--cinza-escuro);
   font-size: 1.1rem;
@@ -425,7 +467,7 @@ function isMobile() {
     display: none;
   }
 
-  .popup{
+  .popup {
     width: 80%;
   }
 }
