@@ -73,6 +73,12 @@ onMounted(() => {
   border-radius: 1.5rem;
   margin: 0 0 1.5rem 0;
   box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.24);
+  transition: all 0.2s ease;
+}
+
+.div-zonas ul li:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .gap {

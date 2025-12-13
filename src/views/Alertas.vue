@@ -66,8 +66,8 @@
 
 <script setup>
 import { ref as vueRef, computed, onMounted } from "vue";
-import { useGeofences } from "../composables/useGeofence";
 import { auth } from "@/firebase";
+import { useAlertas } from "@/composables/useAlertas";
 
 const {
   historicoAlertas,
@@ -75,7 +75,7 @@ const {
   limparHistoricoAlertas,
   filtrarAlertasPorPeriodo,
   carregarHistoricoAlertas
-} = useGeofences();
+} = useAlertas();
 
 const filtroSelecionado = vueRef("Hoje");
 

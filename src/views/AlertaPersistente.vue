@@ -42,7 +42,7 @@
 </template>
 
 <script setup>
-import { ref as vueRef, computed, onMounted, onUnmounted } from 'vue'
+import { ref as vueRef, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   alertasAtivos: {

@@ -1,7 +1,6 @@
 <template>
   <div class="container-alertas">
     <div class="header-alertas">
-      <h1>🔔 Alertas do Pet</h1>
       <div class="estatisticas">
         <div class="stat-card">
           <span class="stat-numero">{{ estatisticasAlertas.total }}</span>
@@ -83,9 +82,9 @@
 </template>
 
 <script setup>
-import { ref as vueRef, onMounted } from "vue";
-import { useGeofences } from "../../composables/useGeofence";
+import { onMounted } from "vue";
 import { auth } from "@/firebase";
+import { useAlertas } from "@/composables/useAlertas";
 
 const {
   historicoAlertas,
@@ -93,7 +92,7 @@ const {
   marcarAlertaVisualizado,
   limparHistoricoAlertas,
   carregarHistoricoAlertas
-} = useGeofences();
+} = useAlertas();
 
 onMounted(async () => {
   const user = auth.currentUser;
@@ -132,15 +131,15 @@ function confirmarLimpeza() {
     limparHistoricoAlertas();
   }
 }
+
 </script>
 
 <style scoped>
 .container-alertas {
-  padding: 1rem;
+  padding: 0.5rem;
   max-width: 800px;
   margin: 0 auto;
   height: 100vh; 
-  
   display: flex;
   flex-direction: column;
   overflow: hidden; 
@@ -196,33 +195,24 @@ function confirmarLimpeza() {
 }
 
 .lista-alertas {
-  flex: 1; 
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 0.5rem; 
-  
-  min-height: 0; 
+  padding: 0.2rem;
+  max-height: 700px;
   scroll-behavior: smooth;
 }
+
 .lista-alertas::-webkit-scrollbar {
   width: 6px;
-}
-
-.lista-alertas::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
 }
 
 .lista-alertas::-webkit-scrollbar-thumb {
   background: #ccc;
   border-radius: 10px;
-}
-
-.lista-alertas::-webkit-scrollbar-thumb:hover {
-  background: #999;
 }
 
 .sem-alertas {
@@ -238,7 +228,7 @@ function confirmarLimpeza() {
   opacity: 0.3;
 }
 
-/* Card de Alerta */
+
 .card-alerta {
   background: white;
   border-radius: 12px;
@@ -268,7 +258,7 @@ function confirmarLimpeza() {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
 }
 
 .icone-tipo { font-size: 1.8rem; }

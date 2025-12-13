@@ -15,6 +15,7 @@
             {{ estatisticasAlertas.naoVisualizados }}
           </span>
         </a>
+        <a class="nav-texto" @click="abrirBarra('historico')">Histórico</a>
       </div>
 
       <div class="div-config" @click="abrirBarra('configuracoes')">
@@ -30,7 +31,6 @@
     </div>
     <p>Lat: {{ posicaoAtual.lat.toFixed(6) }}</p>
     <p>Lng: {{ posicaoAtual.lng.toFixed(6) }}</p>
-    <p>Vel: {{ posicaoAtual.velocidade_kmh?.toFixed(1) || 0}} Km</p>
   </div>
 
   <div id="mapa" class="mapa"></div>
@@ -55,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref as vueRef, watch, computed } from "vue";
+import { ref as vueRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { onAuthStateChanged } from "firebase/auth";
 import { onValue, ref as dbRef } from "firebase/database";
@@ -65,6 +65,7 @@ import marcadorIcone from "../assets/imgs/marcador.svg";
 import barraLateral from "../components/barraLateral.vue";
 import PopupAlerta from "../components/PopupAlerta.vue";
 import { useGeofences } from "../composables/useGeofence";
+import { useAlertas } from "../composables/useAlertas";
 
 const router = useRouter();
 
@@ -77,15 +78,62 @@ const {
   nomeZona,
   raioZona,
   corZona,
-  modoSelecao,
-  alertaAtivo,
-  estatisticasAlertas,
-  verificarAlertas,
-  carregarHistoricoAlertas,
-  fecharAlerta
+  modoSelecao
 } = useGeofences();
 
+const {
+  alertaAtivo,
+  estatisticasAlertas,
+  criarAlerta,
+  determinarNivelAlerta,
+  devecriarAlerta,
+  carregarHistoricoAlertas,
+  fecharAlerta
+} = useAlertas();
+
 const usuarioId = vueRef(null);
+
+async function verificarAlertas(posicaoAtual, petNome = "Seu pet") {
+  if (!usuarioId.value) {
+    console.log("Usuário não identificado");
+    return null;
+  }
+
+  const { dentroDeAlgumaZona, alertasDetectados } = verificarDentroZona(posicaoAtual);
+
+  if (alertasDetectados.length === 0) {
+    return null;
+  }
+
+  for (const alertaInfo of alertasDetectados) {
+    const { zona, distanciaForaZona } = alertaInfo;
+    
+    if (!devecriarAlerta(zona.id)) {
+      console.log(`Alerta da zona ${zona.nome} em cooldown`);
+      continue;
+    }
+
+    const nivelAlerta = determinarNivelAlerta(distanciaForaZona);
+    
+    if (nivelAlerta) {
+      const alerta = await criarAlerta({
+        petNome,
+        zona,
+        nivelAlerta,
+        distanciaForaZona,
+        localizacao: posicaoAtual
+      });
+
+      if (alerta && !alertaAtivo.value) {
+        alertaAtivo.value = alerta;
+      }
+
+      return alerta;
+    }
+  }
+
+  return null;
+}
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
@@ -112,7 +160,9 @@ const labelsBarra = {
   zonasAtivas: "Zonas ativas",
   geofences: "Geofences",
   menu: "Menu",
+  historico: "Histórico"
 };
+
 
 function abrirBarra(tipo) {
   nomeBarra.value = labelsBarra[tipo] || "";
@@ -125,6 +175,7 @@ function abrirBarra(tipo) {
     "menu",
     "zonasAtivas",
     "geofences",
+    "historico",
   ];
 
   if (arrayRotas.includes(tipo)) {
@@ -132,6 +183,8 @@ function abrirBarra(tipo) {
     router.push({ name: tipo });
   }
 }
+
+
 
 function gerenciarVoltar() {
   const rotaAtual = router.currentRoute.value.name;
@@ -180,7 +233,6 @@ const mapaPronto = vueRef(false);
 const posicaoAtual = vueRef({
   lat: 0,
   lng: 0,
-  velocidade_kmh: 0,
 });
 
 function iniciarMapa() {
@@ -242,7 +294,6 @@ function iniciarMapa() {
       posicaoAtual.value = {
         lat: dados.lat,
         lng: dados.lng,
-        velocidade_kmh: dados.velocidade_kmh || 0,
       };
 
       marcador.setPosition({
@@ -283,6 +334,8 @@ function centralizarMapa() {
     mapaGoogle.setZoom(16);
   }
 }
+
+
 
 const geofenceCirculo = vueRef([]);
 

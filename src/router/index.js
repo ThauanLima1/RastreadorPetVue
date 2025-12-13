@@ -8,6 +8,7 @@ import BarraAlertas from "@/components/pages/barraAlertas.vue";
 import BarraMenu from "@/components/pages/barraMenu.vue";
 import BarraGeofences from "@/components/pages/barraGeofences.vue";
 import BarraZonasAtivas from "@/components/pages/barraZonasAtivas.vue";
+import BarraHistorico from "@/components/pages/barraHistorico.vue";
 
 const routes = [
   { path: "/app/login", component: Login },
@@ -47,7 +48,11 @@ const routes = [
       name: 'zonasAtivas',
       component: BarraZonasAtivas,
     },
-
+      {
+      path: 'historico',
+      name: 'historico',
+      component: BarraHistorico,
+    },
 
   ],
 }
