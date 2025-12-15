@@ -119,7 +119,7 @@ function formatarDataCurta(timestamp) {
 }
 
 .filtro.ativo {
-  background-color: var(--roxo);
+  background-color: var(--azul-escuro);
   color: var(--branco);
 }
 

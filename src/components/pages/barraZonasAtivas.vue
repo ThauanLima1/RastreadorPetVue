@@ -1,5 +1,4 @@
 <template>
-  <div class="gap"></div>
   <div class="div-zonas" v-if="zonasAtivas.length > 0">
     <ul v-for="(zona, index) in zonasAtivas" :key="zona.id || index">
       <li>
@@ -24,7 +23,7 @@
     </ul>
   </div>
   <div v-else class="sem-zonas">
-    <p>Nenhuma zona ativa encontrada.</p>
+    <p>Nenhuma zona encontrada.</p>
   </div>
 </template>
 
@@ -81,9 +80,7 @@ onMounted(() => {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
-.gap {
-  margin: 1rem;
-}
+
 
 .topo-zonas {
   display: flex;
@@ -106,6 +103,7 @@ onMounted(() => {
 .topo-zonas p {
   color: var(--cinza);
   font-size: 1rem;
+  font-weight: 500;
 }
 
 .nome-cor span {
@@ -124,11 +122,13 @@ onMounted(() => {
 .coordenadas-excluir p {
   color: var(--cinza);
   font-size: 0.8rem;
+  font-weight: 500;
 }
 
 .sem-zonas p {
-  color: var(--cinza-escuro);
-  font-size: 1.2rem;
+  color: var(--cinza);
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 </style>

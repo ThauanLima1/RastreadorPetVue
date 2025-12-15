@@ -61,7 +61,9 @@
             >
           </div>
 
-          <Botao type="submit" :disabled="carregando" :carregando="carregando">Entrar</Botao>
+          <Botao type="submit" :disabled="carregando" :carregando="carregando"
+            >Entrar</Botao
+          >
         </form>
 
         <div class="cadastro-link">
@@ -76,6 +78,12 @@
     </div>
   </div>
 
+  <mensagemAlertas
+    :visivel="mostrarAlerta"
+    :type="alertaTipo"
+    :mensagem="alertaMensagem"
+  />
+
   <RecuperarSenha
     :visivel="mostrarConteudo"
     @fechar-janela="mostrarConteudo = false"
@@ -85,45 +93,74 @@
 <script setup>
 import Botao from "@/components/botao.vue";
 import RecuperarSenha from "@/components/recuperarSenha.vue";
+import mensagemAlertas from "@/components/mensagemAlertas.vue";
 
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/firebase/index.js";
 
-import { ref } from "vue";
+import { ref as vueRef } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-const email = ref("");
-const senha = ref("");
-const mostrarSenha = ref(false);
-const mostrarConteudo = ref(false);
-const carregando = ref(false);
+const email = vueRef("");
+const senha = vueRef("");
+const mostrarSenha = vueRef(false);
+const mostrarConteudo = vueRef(false);
+const carregando = vueRef(false);
 
 async function fazerLogin() {
-   carregando.value = true;
+  carregando.value = true;
   try {
-    await signInWithEmailAndPassword(auth, email.value, senha.value);
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email.value,
+      senha.value
+    );
 
-    router.push("/app/mapa");
+    exibirAlerta("logado", `Autenticado como ${userCredential.user.email}`);
+
+    setTimeout(() => {
+      router.push("/app/mapa");
+    }, 2000);
   } catch (error) {
     console.error("Erro ao fazer login:", error);
   } finally {
-     carregando.value = false;
+    carregando.value = false;
   }
 }
 
 async function loginComGoogle() {
   carregando.value = true;
   try {
-    await signInWithPopup(auth, googleProvider);
+    const result = await signInWithPopup(auth, googleProvider);
 
-    router.push("/app/mapa");
+    exibirAlerta("logado", `Autenticado como ${result.user.email}`);
+
+    setTimeout(() => {
+      router.push("/app/mapa");
+    }, 2000);
   } catch (error) {
     console.error("Erro ao fazer login:", error);
   } finally {
     carregando.value = false;
   }
+}
+
+//Alertas
+
+const mostrarAlerta = vueRef(false);
+const alertaTipo = vueRef("sucesso");
+const alertaMensagem = vueRef("");
+
+function exibirAlerta(tipo, mensagem, duracao = 3000) {
+  alertaTipo.value = tipo;
+  alertaMensagem.value = mensagem;
+  mostrarAlerta.value = true;
+
+  setTimeout(() => {
+    mostrarAlerta.value = false;
+  }, duracao);
 }
 </script>
 

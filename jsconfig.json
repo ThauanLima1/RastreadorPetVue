@@ -1,9 +1,16 @@
-{
+  {
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"]
     }
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist", "src/components/pages/teset.vue"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/components/pages/teset.vue",
+    "src/views/Alertas.vue",
+    "src/components/PopupAlerta.vue",
+    "src/views/AlertaPersistente.vue"
+  ]
 }

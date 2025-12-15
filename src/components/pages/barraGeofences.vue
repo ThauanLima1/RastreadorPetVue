@@ -43,58 +43,50 @@
       </div>
     </div>
 
-    <button class="add-geocercas" @click="ativarSelecaoNoMapa">
-      Adicionar
-    </button>
+    <button class="add-geocercas" @click="ativarSelecaoNoMapa">Salvar</button>
 
-    <button class="ver-zonas" @click="abrirZonasAtivas">
-      Zonas ativas
-    </button>
-
+    <button class="ver-zonas" @click="abrirZonasAtivas">Ver zonas</button>
   </div>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
-import { useGeofences } from '@/composables/useGeofence'
+import { useRouter } from "vue-router";
+import { useGeofences } from "@/composables/useGeofence";
 
 const router = useRouter();
 
-
-const {
-  nomeZona,
-  raioZona,
-  corZona,
-  visivelBarraGlobal,
-  modoSelecao,
-} = useGeofences()
+const { nomeZona, raioZona, corZona, visivelBarraGlobal, modoSelecao } =
+  useGeofences();
 
 const opcoesCores = [
-  { valor: '#ff4d4d', hexa: '#ff4d4d', nome: 'vermelho' },
-  { valor: '#ff9f43', hexa: '#ff9f43', nome: 'laranja' },
-  { valor: '#2ecc71', hexa: '#2ecc71', nome: 'verde' },
-  { valor: '#3264fe', hexa: '#3264fe', nome: 'azul' },
-  { valor: '#5f1bff', hexa: '#5f1bff', nome: 'roxo' },
-]
+  { valor: "#ff4d4d", hexa: "#ff4d4d", nome: "vermelho" },
+  { valor: "#ff9f43", hexa: "#ff9f43", nome: "laranja" },
+  { valor: "#2ecc71", hexa: "#2ecc71", nome: "verde" },
+  { valor: "#3264fe", hexa: "#3264fe", nome: "azul" },
+  { valor: "#5f1bff", hexa: "#5f1bff", nome: "roxo" },
+];
 
 function ativarSelecaoNoMapa() {
-  if (!nomeZona.value || nomeZona.value.trim() === '') {
-    alert('Digite um nome para sua zona!')
-    return
+  if (!nomeZona.value || nomeZona.value.trim() === "") {
+    alert("Digite um nome para sua zona!");
+    return;
   }
- 
+
   visivelBarraGlobal.value = false;
   modoSelecao.value = true;
 }
 
 function abrirZonasAtivas() {
-  router.push({ name: 'zonasAtivas' })
+  router.push({ name: "zonasAtivas" });
 }
-
 </script>
 
-
 <style scoped>
+
+p {
+  font-weight: 500;
+  color: var(--cinza);
+}
 
 .entrada-grupo {
   display: flex;
@@ -207,9 +199,9 @@ label {
   margin: 1rem 0;
   height: 5.4vh;
   width: 100%;
-  background-color: var(--cinza-escuro);
-  color: var(--gelo);
-  font-weight: 600;
+  background-color: var(--azul-escuro);
+  color: var(--branco);
+  font-weight: 500;
   font-size: 1.2rem;
   border: none;
   border-radius: 15px;
@@ -227,15 +219,18 @@ label {
 }
 
 .ver-zonas {
-  height: 4.4vh;
+  height: 4.6vh;
   width: 100%;
-  background-color: var(--gelo);
-  color: var(--azul-claro);
+  background-color: var(--branco);
+  color: #150047;
   font-weight: 550;
   font-size: 1rem;
-  border: none;
+
+  background: linear-gradient(#ffffff) padding-box,
+    linear-gradient(135deg, #141c41, #000e8b, #000000) border-box;
+  border: 2px solid transparent;
+
   border-radius: 14px;
   transition: background-color 0.3s ease;
 }
-
 </style>
