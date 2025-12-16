@@ -1,7 +1,7 @@
 import { ref as vueRef, computed } from "vue";
 import { auth, database } from "@/firebase";
 import { ref as dbRef, push, set, get, remove } from "firebase/database";
-import { post } from "@/api/index";
+import { post, get as getMySql } from "@/api/index";
 
 const historicoAlertas = vueRef([]);
 const alertaAtivo = vueRef(null);
@@ -129,7 +129,7 @@ async function excluirAlerta(alertaId) {
       latitude: localizacao.lat,
       longitude: localizacao.lng,
       distance: distanciaForaZona,
-      dateTime: new Date().toISOString(),
+      locationDateTime: new Date().toISOString(),
       batteryLevel: 85.5,
       deviceId: 1,
     };
@@ -175,6 +175,44 @@ async function excluirAlerta(alertaId) {
     }
   }
 
+  const historicoLocalizacoesSQL = vueRef([]);
+
+  const LOCATION_ENDPOINTS = {
+    TODAY: 'locations/today',
+    MONTH: 'locations/this-month',
+    ALL: 'locations',
+};
+
+async function carregarHistoricoLocalizacoes(filter) {
+    const endpoint = LOCATION_ENDPOINTS[filter.toUpperCase()] || LOCATION_ENDPOINTS.ALL;
+    
+    console.log(`Buscando localizações para o filtro: ${filter.toUpperCase()}`);
+    historicoLocalizacoesSQL.value = []; 
+
+    try {
+        const data = await getMySql(endpoint);
+        
+        historicoLocalizacoesSQL.value = data;
+        
+        return data;
+    } catch (error) {
+        console.error(`Erro ao carregar localizações (${filter}):`, error);
+        return []; 
+    }
+}
+
+function getLocationsToday() {
+    return carregarHistoricoLocalizacoes('TODAY');
+}
+
+function getLocationsThisMonth() {
+    return carregarHistoricoLocalizacoes('MONTH');
+}
+
+function getAllLocations() {
+    return carregarHistoricoLocalizacoes('ALL');
+}
+
 
 
 
@@ -202,44 +240,20 @@ async function excluirAlerta(alertaId) {
     }
   }
 
-
-
-
-  function filtrarAlertasPorPeriodo(periodo) {
-    switch (periodo) {
-      case "Hoje":
-        const inicioHoje = new Date();
-        inicioHoje.setHours(0, 0, 0, 0);
-        return historicoAlertas.value.filter(
-          (a) => a.timestamp >= inicioHoje.getTime()
-        );
-
-      case "Mês":
-        const inicioMes = new Date();
-        inicioMes.setDate(1);
-        inicioMes.setHours(0, 0, 0, 0);
-        return historicoAlertas.value.filter(
-          (a) => a.timestamp >= inicioMes.getTime()
-        );
-
-      default:
-        return historicoAlertas.value;
-    }
-  }
-
-
-
   return {
     historicoAlertas,
+    historicoLocalizacoesSQL,
     alertaAtivo,
     estatisticasAlertas,
     criarAlerta,
     carregarHistoricoAlertas,
     marcarAlertaVisualizado,
-    filtrarAlertasPorPeriodo,
     excluirAlerta,
     determinarNivelAlerta,
     devecriarAlerta,
     NIVEIS_ALERTA,
+    getLocationsToday,
+    getLocationsThisMonth,
+    getAllLocations,
   };
 }

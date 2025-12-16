@@ -12,43 +12,45 @@
   </div>
 
   <div class="lista-alertas">
-    <div v-if="historicoAlertas.length === 0" class="sem-alertas">
-      <p>Nenhum histórico registrado.</p>
-      <span
-        >Quando seu pet sair de uma zona segura, os históricos aparecerão
-        aqui.</span
-      >
+    <div v-if="historicoLocalizacoesSQL.length === 0" class="sem-alertas">
+      <p>Nenhum histórico de localização encontrado para o filtro "{{ filtroSelecionado }}".</p>
+      <span>
+        Tente mudar o filtro ou verifique se o dispositivo enviou dados recentemente.
+      </span>
     </div>
 
     <div
       v-else
-      v-for="alerta in historicoAlertas"
-      :key="alerta.id"
+      v-for="localizacao in historicoLocalizacoesSQL"
+      :key="localizacao.id"
       class="card-alerta"
-      @click="visualizarAlerta(alerta)"
+      @click="visualizarAlerta(localizacao)"
+      
     >
       <div class="alerta-header">
-        <div class="zona-nome">
-          <span class="icone-localizacao"
+    <div class="zona-nome">
+        <span class="icone-localizacao"
             ><img src="@/assets/imgs/localizacao.svg" alt=""
-          /></span>
-          <h3>{{ alerta.zonaNome || "Zona" }}</h3>
-        </div>
+        /></span>
+        <h3>{{ localizacao.zoneName }}</h3>
+    </div>
         <span></span>
-        <div class="data-alerta">{{ formatarDataCurta(alerta.timestamp) }}</div>
+        <div class="data-alerta">{{ formatarDataCompleta(localizacao.locationDateTime) }}</div> 
       </div>
 
-      <p class="mensagem-saida">Seu pet saiu da zona!</p>
+     <p class="mensagem-saida">
+          Registro de Posição (Nível de Bateria: {{ formatarCoordenada(localizacao.locationBatteryLevel) }}%)
+      </p>
 
       <div class="alerta-footer">
-        <div class="coordenadas">
-          <span>Lat: {{ alerta.latitude }}</span><br>
-          <span>Lng: {{ alerta.longitude }}</span>
-        </div>
-        <div class="distancia" :class="`distancia-${alerta.nivel}`">
-          <span class="distancia-label">Distância:</span>
-          <span class="distancia-valor">{{ alerta.distancia }}m</span>
-        </div>
+        <div class="coordenadas">
+          <span>Lat: {{ formatarCoordenada(localizacao.latitude) }}</span><br>
+          <span>Lng: {{ formatarCoordenada(localizacao.longitude) }}</span>
+        </div>
+        <div class="distancia">
+           <span class="distancia-label">Device ID:</span>
+           <span class="distancia-valor">{{ localizacao.deviceId }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -60,32 +62,68 @@ import { auth } from "@/firebase";
 import { ref as vueRef } from "vue";
 import { useAlertas } from "@/composables/useAlertas";
 
-const { historicoAlertas, marcarAlertaVisualizado, carregarHistoricoAlertas } =
+const { historicoLocalizacoesSQL, 
+    getLocationsToday, 
+    getLocationsThisMonth, 
+    getAllLocations,historicoAlertas, marcarAlertaVisualizado, carregarHistoricoAlertas } =
   useAlertas();
 
 const filtroSelecionado = vueRef("Hoje");
 
 const filtros = vueRef([
-  { nome: "Hoje", classe: "filtro-hoje" },
-  { nome: "Mês", classe: "filtro-mes" },
-  { nome: "Todos", classe: "filtro-todos" },
+    { nome: "Hoje", valor: "today", classe: "filtro-hoje" }, 
+    { nome: "Mês", valor: "month", classe: "filtro-mes" },
+    { nome: "Todos", valor: "all", classe: "filtro-todos" },
 ]);
 
-function selecionarFiltro(filtro) {
-  filtroSelecionado.value = filtro.nome;
+
+const carregaFiltroMap = {
+    'today': getLocationsToday,
+    'month': getLocationsThisMonth,
+    'all': getAllLocations,
+};
+
+async function selecionarFiltro(filtro) {
+    filtroSelecionado.value = filtro.nome;
+    
+    const funcaoCarregamento = carregaFiltroMap[filtro.valor];
+    
+    if (funcaoCarregamento) {
+        await funcaoCarregamento();
+    }
+}
+
+function formatarCoordenada(valor) {
+    if (valor === undefined || valor === null) return '';
+    
+    return Number(valor).toFixed(6); 
 }
 
 onMounted(async () => {
-  const user = auth.currentUser;
-  if (user) {
-    await carregarHistoricoAlertas(user.uid);
-  }
+    await getLocationsToday(); 
+    
+    // const user = auth.currentUser;
+    // if (user) {
+    //     await carregarHistoricoAlertas(user.uid);
+    // }
+    
 });
 
 function visualizarAlerta(alerta) {
   if (!alerta.visualizado) {
     marcarAlertaVisualizado(alerta.id);
   }
+}
+
+function formatarDataCompleta(dateTimeString) {
+    const data = new Date(dateTimeString);
+    return data.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    }) + 'h';
 }
 
 function formatarDataCurta(timestamp) {
