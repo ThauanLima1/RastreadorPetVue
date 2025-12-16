@@ -13,7 +13,6 @@
 
     <div class="lista-alertas">
       <div v-if="historicoAlertas.length === 0" class="sem-alertas">
-      
         <p>Nenhum alerta registrado.</p>
         <span
           >Quando seu pet sair de uma zona segura, os alertas aparecerão
@@ -37,7 +36,6 @@
             ></div>
             <h3>{{ alerta.zonaNome || "Zona" }}</h3>
             <span v-if="!alerta.visualizado" class="badge-novo">Novo</span>
-            <div class="card-footer"></div>
             <span class="divisor"></span>
           </div>
           <button class="btn-fechar" @click.stop="removerAlerta(alerta.id)">
@@ -92,7 +90,6 @@ function formatarData(timestamp) {
 function removerAlerta(id) {
   excluirAlerta(id);
 }
-
 </script>
 
 <style scoped>
@@ -171,7 +168,7 @@ function removerAlerta(id) {
   color: var(--cinza);
 }
 
-.sem-alertas p{
+.sem-alertas p {
   font-size: 1.2rem;
   font-weight: 600;
   padding-bottom: 0.2rem;
@@ -260,7 +257,7 @@ function removerAlerta(id) {
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
-  margin-left: 8.5rem;
+  margin-right: 2.5rem;
 }
 
 .btn-fechar {

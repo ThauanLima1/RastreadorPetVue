@@ -129,10 +129,11 @@ async function excluirAlerta(alertaId) {
       latitude: localizacao.lat,
       longitude: localizacao.lng,
       distance: distanciaForaZona,
-      locationDateTime: new Date().toISOString(),
       batteryLevel: 85.5,
       deviceId: 1,
     };
+
+console.log(alertaMySQL.locationDateTime);
 
     try {
       await post("locations", alertaMySQL);

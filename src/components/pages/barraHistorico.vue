@@ -13,9 +13,9 @@
 
   <div class="lista-alertas">
     <div v-if="historicoLocalizacoesSQL.length === 0" class="sem-alertas">
-      <p>Nenhum histórico de localização encontrado para o filtro "{{ filtroSelecionado }}".</p>
+      <p>Nenhum histórico registrado.</p>
       <span>
-        Tente mudar o filtro ou verifique se o dispositivo enviou dados recentemente.
+        Quando seu pet sair de uma zona segura, os históricos aparecerão aqui.
       </span>
     </div>
 
@@ -25,40 +25,37 @@
       :key="localizacao.id"
       class="card-alerta"
       @click="visualizarAlerta(localizacao)"
-      
     >
       <div class="alerta-header">
-    <div class="zona-nome">
-        <span class="icone-localizacao"
-            ><img src="@/assets/imgs/localizacao.svg" alt=""
-        /></span>
-        <h3>{{ localizacao.zoneName }}</h3>
-    </div>
+        <div class="zona-nome">
+          <span class="icone-localizacao">
+            <img src="@/assets/imgs/localizacao.svg" alt="" />
+          </span>
+          <h3>{{ localizacao.zoneName || "Zona" }}</h3>
+        </div>
         <span></span>
-        <div class="data-alerta">{{ formatarDataCompleta(localizacao.locationDateTime) }}</div> 
+        <div class="data-alerta">
+          {{ formatarDataCompleta(localizacao.locationDateTime) }}
+        </div>
       </div>
 
-     <p class="mensagem-saida">
-          Registro de Posição (Nível de Bateria: {{ formatarCoordenada(localizacao.locationBatteryLevel) }}%)
-      </p>
+      <p class="mensagem-saida">Seu pet saiu da zona!</p>
 
       <div class="alerta-footer">
-        <div class="coordenadas">
-          <span>Lat: {{ formatarCoordenada(localizacao.latitude) }}</span><br>
-          <span>Lng: {{ formatarCoordenada(localizacao.longitude) }}</span>
-        </div>
-        <div class="distancia">
-           <span class="distancia-label">Device ID:</span>
-           <span class="distancia-valor">{{ localizacao.deviceId }}</span>
-        </div>
+        <div class="coordenadas">
+          <span>Lat: {{ formatarCoordenada(localizacao.latitude) }}</span><br>
+          <span>Lng: {{ formatarCoordenada(localizacao.longitude) }}</span>
+        </div>
+        <div class="distancia">
+          <span class="distancia-label">Distância:</span>
+          <span class="distancia-valor">{{ localizacao.distance }}m</span>
+        </div>
       </div>
     </div>
   </div>
 </template>
-
 <script setup>
 import { onMounted } from "vue";
-import { auth } from "@/firebase";
 import { ref as vueRef } from "vue";
 import { useAlertas } from "@/composables/useAlertas";
 
@@ -101,12 +98,7 @@ function formatarCoordenada(valor) {
 
 onMounted(async () => {
     await getLocationsToday(); 
-    
-    // const user = auth.currentUser;
-    // if (user) {
-    //     await carregarHistoricoAlertas(user.uid);
-    // }
-    
+
 });
 
 function visualizarAlerta(alerta) {
@@ -116,24 +108,19 @@ function visualizarAlerta(alerta) {
 }
 
 function formatarDataCompleta(dateTimeString) {
+    if (!dateTimeString) return '';
+    
     const data = new Date(dateTimeString);
-    return data.toLocaleDateString("pt-BR", {
+    
+    return data.toLocaleString("pt-BR", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
     }) + 'h';
-}
+} 
 
-function formatarDataCurta(timestamp) {
-  const data = new Date(timestamp);
-  return data.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
 </script>
 
 <style scoped>
