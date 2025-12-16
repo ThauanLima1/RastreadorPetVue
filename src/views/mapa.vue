@@ -210,8 +210,6 @@ async function verificarAlertas(posicaoAtual, petNome = "Seu pet") {
   return null;
 }
 
-//Verificar se o usuario está logado
-
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     usuarioId.value = user.uid;
@@ -227,7 +225,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-//Barra
 
 const visivelBarra = vueRef(false);
 const nomeBarra = vueRef("");
@@ -412,7 +409,6 @@ function centralizarMapa() {
     mapaGoogle.setZoom(16);
   }
 }
-//Alertas
 
 const mostrarAlerta = vueRef(false);
 const alertaTipo = vueRef("sucesso");
@@ -428,7 +424,6 @@ function exibirAlerta(tipo, mensagem, duracao = 3000) {
   }, duracao);
 }
 
-//Geofences
 
 const geofenceCirculo = vueRef([]);
 

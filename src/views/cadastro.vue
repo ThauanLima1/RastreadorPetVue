@@ -20,65 +20,76 @@
 
         <form @submit.prevent="cadastrarUsuario">
           <div class="form-grupo">
+            
             <label>Usuário</label>
             <input
               v-model="usuario"
               type="text"
               class="input"
+              :class="{ 'input-erro': erros.usuario }"
               placeholder="Maria Eduarda"
+              @input="erros.usuario = ''" 
             />
+            <span v-if="erros.usuario" class="msg-erro-texto">
+              {{ erros.usuario }}
+            </span>
 
             <label>Email</label>
             <input
               v-model="email"
               type="email"
               class="input"
+              :class="{ 'input-erro': erros.email }"
               placeholder="mariaeduarda@senai.com"
+              @input="erros.email = ''"
             />
+            <span v-if="erros.email" class="msg-erro-texto">
+              {{ erros.email }}
+            </span>
 
             <label>Senha</label>
-            <div class="wrapper-olho" style="margin-bottom: 2.2rem">
+            <div class="wrapper-olho">
               <input
                 v-model="senha"
                 class="input sem-margem"
+                :class="{ 'input-erro': erros.senha }"
                 :type="mostrarSenha ? 'text' : 'password'"
                 placeholder="123456"
+                @input="erros.senha = ''"
               />
               <div class="icone-olho" @click="mostrarSenha = !mostrarSenha">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  fill="currentColor"
-                  class="olho"
-                  :class="{ ativo: mostrarSenha }"
-                  id="olho"
-                  viewBox="0 0 16 16"
-                  stroke-width="2"
-                >
-                  <path
-                    d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"
-                  />
-                  <path
-                    d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"
-                  />
-                </svg>
+                <i
+                  class="bi"
+                  :class="mostrarSenha ? 'bi-eye-fill olho ativo' : 'bi-eye olho'"
+                ></i>
               </div>
             </div>
+            <span v-if="erros.senha" class="msg-erro-texto mb-custom">
+              {{ erros.senha }}
+            </span>
+
             <label>Confirmar senha</label>
             <input
               v-model="confirmarSenha"
               class="input sem-margem"
-              style="margin-bottom: 1.5rem"
+              :class="{ 'input-erro': erros.confirmarSenha }"
+              style="margin-bottom: 0.5rem"
               :type="mostrarSenha ? 'text' : 'password'"
               placeholder="123456"
+              @input="erros.confirmarSenha = ''"
             />
+            <span v-if="erros.confirmarSenha" class="msg-erro-texto mb-custom">
+              {{ erros.confirmarSenha }}
+            </span>
           </div>
-          <Botao type="submit" :disabled="carregando" :carregando="carregando">Cadastrar</Botao>
+
+          <Botao type="submit" :disabled="carregando" :carregando="carregando">
+            Cadastrar
+          </Botao>
         </form>
 
         <div class="login-link">
-          Não tem uma conta ainda?
+          Já tem uma conta?
           <router-link to="/app/login">Entrar</router-link>
         </div>
       </div>
@@ -88,12 +99,10 @@
 
 <script setup>
 import Botao from "@/components/botao.vue";
-
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth, googleProvider } from "@/firebase/index.js";
 import { signInWithPopup } from "firebase/auth";
-
-import { ref as vueRef} from "vue";
+import { ref as vueRef, reactive } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -105,28 +114,56 @@ const confirmarSenha = vueRef("");
 const mostrarSenha = vueRef(false);
 const carregando = vueRef(false);
 
+const erros = reactive({
+  usuario: "",
+  email: "",
+  senha: "",
+  confirmarSenha: ""
+});
 
-function validarCadastro(usuario, email, senha) {
-  if (!usuario.trim()) return "Nome de usuário é obrigatório.";
-  if (!email.trim()) return "Email é obrigatório.";
-  if (!senha.trim()) return "Senha é obrigatória.";
-  if (senha.trim().length < 6) return "Senha deve ter pelo menos 6 caracteres.";
-  return null;
+function validarFormulario() {
+  let valido = true;
+
+  erros.usuario = "";
+  erros.email = "";
+  erros.senha = "";
+  erros.confirmarSenha = "";
+
+  if (!usuario.value.trim()) {
+    erros.usuario = "O nome de usuário é obrigatório.";
+    valido = false;
+  }
+
+  if (!email.value.trim()) {
+    erros.email = "O email é obrigatório.";
+    valido = false;
+  } else if (!email.value.includes("@")) {
+    erros.email = "Digite um email válido.";
+    valido = false;
+  }
+
+  if (!senha.value.trim()) {
+    erros.senha = "A senha é obrigatória.";
+    valido = false;
+  } else if (senha.value.trim().length < 6) {
+    erros.senha = "A senha deve ter pelo menos 6 caracteres.";
+    valido = false;
+  }
+
+  if (senha.value !== confirmarSenha.value) {
+    erros.confirmarSenha = "As senhas não coincidem.";
+    valido = false;
+  }
+
+  return valido;
 }
 
 async function cadastrarUsuario() {
+  if (!validarFormulario()) {
+    return;
+  }
+
   carregando.value = true;
-
-  if (senha.value !== confirmarSenha.value) {
-    alert("As senhas não coincidem!");
-    return;
-  }
-
-  const erro = validarCadastro(usuario.value, email.value, senha.value);
-  if (erro) {
-    console.error(erro);
-    return;
-  }
 
   try {
     const res = await createUserWithEmailAndPassword(
@@ -143,20 +180,18 @@ async function cadastrarUsuario() {
     router.push("/app/mapa");
   } catch (error) {
     console.error("Erro ao cadastrar usuário:", error);
-
+    if (error.code === 'auth/email-already-in-use') {
+      erros.email = "Este email já está em uso.";
+    }
   } finally {
     carregando.value = false;
   }
 }
 
 async function loginComGoogle() {
-  
-
   try {
-    await signInWithPopup(auth, googleProvider);
-    
     carregando.value = true;
-
+    await signInWithPopup(auth, googleProvider);
     router.push("/app/mapa");
   } catch (error) {
     console.error("Erro ao fazer login:", error);
@@ -167,14 +202,13 @@ async function loginComGoogle() {
 </script>
 
 <style scoped>
+
 .container {
   display: flex;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
 }
-
-/* Sections */
 
 .section-esquerda,
 .section-direita {
@@ -190,8 +224,6 @@ async function loginComGoogle() {
   object-fit: cover;
   display: block;
 }
-
-/* Formulario */
 
 .form-login {
   padding: 2rem;
@@ -223,6 +255,7 @@ async function loginComGoogle() {
   width: 100%;
   height: 5vh;
   border: 1px solid #dadada;
+  background: white;
   color: var(--cinza-escuro);
   padding: 0.6rem;
   border-radius: 1rem;
@@ -264,13 +297,18 @@ async function loginComGoogle() {
   border-radius: 1rem;
   border: 1px solid #dadada;
   color: var(--cinza);
-  margin-bottom: 2.5rem;
+  margin-bottom: 0.5rem; 
   font-size: 0.9rem;
   font-weight: 600;
+  transition: border 0.3s ease;
 }
 
 .form-grupo .input.sem-margem {
   margin-bottom: 0;
+}
+
+.form-grupo .input.input-erro {
+  border: 1px solid #dc3545;
 }
 
 .form-grupo .input::placeholder {
@@ -282,12 +320,25 @@ async function loginComGoogle() {
   border: 1px solid var(--roxo);
 }
 
+.msg-erro-texto {
+  color: #dc3545;
+  font-size: 0.85rem;
+  margin-top: -0.2rem; 
+  margin-bottom: 1.5rem; 
+  display: block;
+  font-weight: 500;
+}
+
+.mb-custom {
+    margin-bottom: 1.5rem;
+    margin-top: 0.3rem;
+}
+
 .wrapper-olho {
   position: relative;
   width: 100%;
   display: flex;
   align-items: center;
-  margin-bottom: 1.2rem;
 }
 
 .wrapper-olho .input {
@@ -304,32 +355,29 @@ async function loginComGoogle() {
 }
 
 .olho {
-  fill: #707070;
-  transition: fill 0.3s;
+  font-size: 1.2rem;
+  color: #707070;
+  transition: color 0.3s;
 }
 
 .olho.ativo {
-  fill: var(--roxo);
-}
-
-.esqueceu-senha {
-  text-align: right;
-}
-
-.esqueceu-senha a {
-  color: #4285f4;
-  text-decoration: none;
-  font-size: 1rem;
+  color: var(--roxo);
 }
 
 .login-link {
   text-align: center;
   font-size: 1rem;
+  margin-top: 1rem;
 }
 
 .login-link a {
   color: #4285f4;
   text-decoration: none;
+  font-weight: 600;
+}
+
+.login-link a:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 768px) {
