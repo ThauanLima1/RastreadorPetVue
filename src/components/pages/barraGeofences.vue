@@ -161,7 +161,7 @@ label {
   flex-direction: column;
   justify-content: center;
   width: 100%;
-  padding: 1rem 0 5rem 0;
+  padding: 1rem 0 8rem 0;
 }
 
 .entrada-raio input {

@@ -70,8 +70,8 @@ const alertClass = computed(() => {
   border: 2px solid #ff9800;
 }
 .alerta-logado {
-  background-color: rgba(2, 7, 51, 0.9);
-  border: 2px solid var(--azul-escuro);
+  background-color: var(--azul-escuro);
+  border: 1px solid var(--azul-escuro);
 }
 
 

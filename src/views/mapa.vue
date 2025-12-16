@@ -80,6 +80,7 @@ const {
   raioZona,
   corZona,
   modoSelecao,
+  registrarCallbackZonaAdicionada,
 } = useGeofences();
 
 const {
@@ -209,7 +210,7 @@ async function verificarAlertas(posicaoAtual, petNome = "Seu pet") {
   return null;
 }
 
-
+//Verificar se o usuario está logado
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
@@ -336,6 +337,9 @@ function iniciarMapa() {
 
   mapaGoogle.addListener("click", async (evento) => {
     if (modoSelecao.value === true) {
+
+      modoSelecao.value = false;
+
       const lat = parseFloat(evento.latLng.lat().toFixed(8));
       const lng = parseFloat(evento.latLng.lng().toFixed(8));
 
@@ -349,7 +353,7 @@ function iniciarMapa() {
           usuarioId.value
         );
 
-        modoSelecao.value = false;
+        
         raioZona.value = 50;
         nomeZona.value = "";
 
@@ -357,6 +361,7 @@ function iniciarMapa() {
       } catch (error) {
         console.log("Erro ao salvar a zona", error);
         exibirAlerta("erro", "Erro ao criar zona.");
+        modoSelecao.value = false;
       }
     }
   });
@@ -451,21 +456,27 @@ function desenharCirculoNoMapa(cercaDados) {
   geofenceCirculo.value.push(novoCirculo);
 }
 
-watch(
-  geofences,
-  (listaAtualizada) => {
-    if (!mapaGoogle) return;
+registrarCallbackZonaAdicionada(async () => {
+    setTimeout(async () => {
+    if (posicaoAtual.value && posicaoAtual.value.lat !== 0) {
+      await verificarAlertas(posicaoAtual.value, "Seu pet");
+    }
+  }, 1000);
+});
+
+watch(geofences, () => {
+  if (mapaGoogle) {
     limparDesenhos();
-    listaAtualizada.forEach((dadosDaCerca) => {
-      desenharCirculoNoMapa(dadosDaCerca);
-    });
-  },
-  { deep: true }
-);
+    geofences.value.forEach(desenharCirculoNoMapa);
+  }
+});
 
 function isMobile() {
   return window.innerWidth <= 940;
 }
+
+
+
 </script>
 
 <style scoped>
@@ -518,10 +529,6 @@ function isMobile() {
 .nav-texto:hover {
   background-color: #ffffff;
   color: #020733cb;
-}
-
-.alerta{
-
 }
 
 .badge-alerta {

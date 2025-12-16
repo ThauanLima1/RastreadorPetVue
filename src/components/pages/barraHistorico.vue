@@ -13,9 +13,11 @@
 
   <div class="lista-alertas">
     <div v-if="historicoAlertas.length === 0" class="sem-alertas">
-      <div class="icone-vazio">🔔</div>
-      <p>Nenhum alerta registrado</p>
-      <span>Quando seu pet sair de uma zona segura, os alertas aparecerão aqui.</span>
+      <p>Nenhum histórico registrado.</p>
+      <span
+        >Quando seu pet sair de uma zona segura, os históricos aparecerão
+        aqui.</span
+      >
     </div>
 
     <div
@@ -27,8 +29,10 @@
     >
       <div class="alerta-header">
         <div class="zona-nome">
-          <span class="icone-localizacao"><img src="@/assets/imgs/localizacao.svg" alt=""></span>
-          <h3>{{ alerta.zonaNome || 'Zona' }}</h3>
+          <span class="icone-localizacao"
+            ><img src="@/assets/imgs/localizacao.svg" alt=""
+          /></span>
+          <h3>{{ alerta.zonaNome || "Zona" }}</h3>
         </div>
         <span></span>
         <div class="data-alerta">{{ formatarDataCurta(alerta.timestamp) }}</div>
@@ -38,17 +42,16 @@
 
       <div class="alerta-footer">
         <div class="coordenadas">
-          <span>Lat: {{ alerta.latitude }}, Lng: {{ alerta.longitude }}</span>
+          <span>Lat: {{ alerta.latitude }}</span><br>
+          <span>Lng: {{ alerta.longitude }}</span>
         </div>
-      <div class="distancia" :class="`distancia-${alerta.nivel}`">
-  <span class="distancia-label">Distância:</span>
-  <span class="distancia-valor">{{ alerta.distancia }}m</span>
-</div>
-
+        <div class="distancia" :class="`distancia-${alerta.nivel}`">
+          <span class="distancia-label">Distância:</span>
+          <span class="distancia-valor">{{ alerta.distancia }}m</span>
+        </div>
       </div>
     </div>
   </div>
-
 </template>
 
 <script setup>
@@ -57,11 +60,8 @@ import { auth } from "@/firebase";
 import { ref as vueRef } from "vue";
 import { useAlertas } from "@/composables/useAlertas";
 
-const {
-  historicoAlertas,
-  marcarAlertaVisualizado,
-  carregarHistoricoAlertas
-} = useAlertas();
+const { historicoAlertas, marcarAlertaVisualizado, carregarHistoricoAlertas } =
+  useAlertas();
 
 const filtroSelecionado = vueRef("Hoje");
 
@@ -90,16 +90,15 @@ function visualizarAlerta(alerta) {
 
 function formatarDataCurta(timestamp) {
   const data = new Date(timestamp);
-  return data.toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
+  return data.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
 }
 </script>
 
 <style scoped>
-
 .conteudo-filtro {
   display: flex;
   justify-content: space-between;
@@ -145,16 +144,13 @@ function formatarDataCurta(timestamp) {
 }
 
 .sem-alertas {
-  text-align: center;
-  padding: 3rem 1rem;
-  color: #999;
-  margin: auto;
+  color: var(--cinza);
 }
 
-.icone-vazio {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  opacity: 0.3;
+.sem-alertas p {
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding-bottom: 0.2rem;
 }
 
 .card-alerta {
@@ -230,8 +226,10 @@ function formatarDataCurta(timestamp) {
 
 .coordenadas {
   font-size: 0.8rem;
-  color: #999;
+  font-weight: 600;
+  color: var(--cinza);
 }
+
 .distancia {
   display: flex;
   align-items: center;
@@ -262,7 +260,7 @@ function formatarDataCurta(timestamp) {
   color: #ff3333;
 }
 
-.acoes-historico {  
+.acoes-historico {
   text-align: center;
   padding: 1rem 0 0 0;
   flex-shrink: 0;

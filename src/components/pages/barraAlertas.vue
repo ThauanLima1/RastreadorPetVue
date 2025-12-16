@@ -13,8 +13,8 @@
 
     <div class="lista-alertas">
       <div v-if="historicoAlertas.length === 0" class="sem-alertas">
-        <div class="icone-vazio">🔔</div>
-        <p>Nenhum alerta registrado</p>
+      
+        <p>Nenhum alerta registrado.</p>
         <span
           >Quando seu pet sair de uma zona segura, os alertas aparecerão
           aqui.</span
@@ -97,7 +97,7 @@ function removerAlerta(id) {
 
 <style scoped>
 .container-alertas {
-  padding: 0.5rem;
+  padding: 0.5rem 0;
   max-width: 800px;
   margin: 0 auto;
   height: 100vh;
@@ -168,16 +168,13 @@ function removerAlerta(id) {
 }
 
 .sem-alertas {
-  text-align: center;
-  padding: 3rem 1rem;
-  color: #999;
-  margin: auto;
+  color: var(--cinza);
 }
 
-.icone-vazio {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  opacity: 0.3;
+.sem-alertas p{
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding-bottom: 0.2rem;
 }
 
 .card-alerta {
