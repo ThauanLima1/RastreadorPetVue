@@ -1,4 +1,4 @@
-const BASE_URL = 'http://ec2-100-26-48-34.compute-1.amazonaws.com:8080/api/';
+const BASE_URL = 'http://localhost:8080/api/';
 
 export async function get(endpoint) {
   console.log('Buscando em:', `${BASE_URL}${endpoint}`);
